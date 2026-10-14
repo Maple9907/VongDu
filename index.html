@@ -1435,7 +1435,7 @@ function swWave(q,s){const dx=q.x-G.x,dy=q.y-G.y,dd=M.hypot(dx,dy)||1,ux=dx/dd,u
 function elB(mul){if(!CL[G.cls].elem)return 1;if(mul)return G.elA?1.15:1;if(G.el>0){G.el--;const s=st();G.mp=M.min(s.mmp,G.mp+s.mmp*.03);ft(G.x,G.y-110,'CỘNG HƯỞNG +15%','#9fd4ff',.9);return 1.15}return 1}
 {const _c=cast;cast=function(i,a){if(!G||!CL[G.cls].elem)return _c(i,a);const b=G.cdk[i];G.elA=G.el>0?1:0;_c(i,a);if(b<=0&&G.cdk[i]>0){if(G.elA){G.el--;const s=st();G.mp=M.min(s.mmp,G.mp+s.mmp*.03);ft(G.x,G.y-110,'CỘNG HƯỞNG +15%','#9fd4ff',.9)}G.el=M.min(3,(G.el||0)+1)}G.elA=0}}
 /* ---- MENU: bảng phủ như Cài đặt Tự đánh, game vẫn chạy. Thêm mục: MENU.push({e:'🎒',t:'Tên',d:'Mô tả',fn:()=>{...}}) (cf:1 = hỏi bấm lại để xác nhận) ---- */
-const MENU=window.MENU=[{e:'🚪',t:'Thoát về màn hình nhân vật',d:'Lưu game rồi quay về màn hình chọn nhân vật.',cf:1,fn:()=>{XL=1;save();Promise.race([Promise.resolve(window.cloudFlush&&window.cloudFlush()),new Promise(r=>setTimeout(r,3500))]).catch(()=>{}).then(()=>location.reload())}}];
+const MENU=window.MENU=[{e:'🏆',t:'Bảng xếp hạng',d:'Xem top người chơi theo cấp độ.',fn:()=>{tmn(0);window.openLB&&window.openLB()}}];
 function mnBuild(){const c=$('#mnc');c.innerHTML='';MENU.forEach(it=>{const b=document.createElement('button');b.className='mni';b.innerHTML='<span>'+(it.e||'')+'</span><div><b></b><small></small></div>';const nb=b.querySelector('b');nb.textContent=it.t;b.querySelector('small').textContent=it.d||'';
   b.onclick=()=>{if(it.cf){if(b.dataset.x)return;if(!b.dataset.c){b.dataset.c='1';b.classList.add('cf');nb.textContent='Bấm lại để xác nhận';setTimeout(()=>{if(b.isConnected&&!b.dataset.x){delete b.dataset.c;b.classList.remove('cf');nb.textContent=it.t}},3000);return}b.dataset.x='1';b.disabled=true;nb.textContent='Đang lưu...'}it.fn(b)};c.append(b)})}
 function tmn(on){if(!G||scr!=3)return;if(on===undefined)on=!$('#mnp').classList.contains('on');if(on)mnBuild();$('#mnp').classList.toggle('on',!!on)}
@@ -2445,7 +2445,7 @@ async function openLB(){
       li.append(n,m,r);o.append(li)});
   }catch(e){o.textContent='Không tải được bảng xếp hạng ('+(e.code||'lỗi mạng')+')'}
 }
-lb.onclick=openLB;q('#clx').onclick=()=>cl.classList.remove('on');cl.onclick=e=>{if(e.target===cl)cl.classList.remove('on')};q('#clg').onclick=google;
+lb.onclick=openLB;window.openLB=openLB;q('#clx').onclick=()=>cl.classList.remove('on');cl.onclick=e=>{if(e.target===cl)cl.classList.remove('on')};q('#clg').onclick=google;
 </script>
 <script type="module" id="mmo-net">
 /* ===== MULTIPLAYER · Firebase Realtime Database =====
@@ -2458,7 +2458,7 @@ import{getApp,initializeApp}from"https://www.gstatic.com/firebasejs/13.0.0/fireb
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import{getDatabase,ref,set,update,remove,push,get,onValue,onChildAdded,onChildChanged,onChildRemoved,onDisconnect,query,orderByChild,limitToLast,limitToFirst,endAt,runTransaction}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
-const RTDB_URL='';
+const RTDB_URL='https://my-game1-7ed99-default-rtdb.asia-southeast1.firebasedatabase.app';
 const SERVER_URL='';/* URL máy chủ game, ví dụ 'wss://game.ten-ban.com' · để trống = dùng Firebase RTDB như cũ (giới hạn ~100 người) */
 const RESP_MS=30*60*1000;
 
