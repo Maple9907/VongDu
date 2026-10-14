@@ -1835,7 +1835,7 @@ function onParty(pid,v){
   if(old){for(const u in v.members)if(!old[u])sys('➕ '+esc(v.members[u].n)+' đã vào tổ đội');
     for(const u in old)if(!v.members[u])sys('➖ '+esc(old[u].n)+' đã rời tổ đội')}
   if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));
-  S.sent=null}
+  S.sent=null;ui()}
 async function doCreate(){
   if(S.party)return S.party;
   const pid=await S.net.partyCreate(me0());
@@ -1848,12 +1848,24 @@ async function doInvite(uid){
     if(Object.keys(S.party.members).length>=PMAX){say('Tổ đội đã đầy ('+PMAX+'/'+PMAX+')');return}
     if(S.party.members[uid]){say(r.n+' đã ở trong tổ đội');return}
     await S.net.partyInvite(uid,S.party.id,G.name);say('Đã gửi lời mời tới '+r.n)
-  }catch(e){say(errMsg(e))}}
+  }catch(e){console.error('[tổ đội] mời/lập đội lỗi',e);sys('⚠️ Mời/lập đội lỗi · mã: '+esc(String(e&&(e.code||e.message)||'?')));say(errMsg(e))}}
 async function doAccept(from){
-  const inv=S.invites.find(i=>i.from===from);if(!inv)return;
-  if(S.party){say('Hãy rời tổ đội hiện tại trước');return}
+  if(S.accepting)return;
+  const inv=S.invites.find(i=>i.from===from);
+  if(!inv){say('Lời mời không còn hiệu lực');return}
+  if(S.party){
+    if(Object.keys(S.party.members||{}).length>1){say('Hãy rời tổ đội hiện tại trước');return}
+    try{await doLeave()}catch(e){}   /* đội solo do tự tạo khi mời người khác → tự giải tán để nhận lời mời */
+    if(S.party){say('Hãy rời tổ đội hiện tại trước');return}
+  }
+  S.accepting=1;
   try{await S.net.partyAccept(inv,me0());watchParty(inv.p);sys('🎉 Đã vào tổ đội của '+esc(inv.n))}
-  catch(e){say(isPerm(e)?'Lời mời đã hết hạn hoặc tổ đội đã đầy':errMsg(e));S.net.inviteDrop(from)}
+  catch(e){
+    console.error('[tổ đội] nhận lời mời lỗi ở bước "'+(e&&e.step||'?')+'"',e);
+    sys('⚠️ Nhận lời mời lỗi · bước: '+esc(e&&e.step||'?')+' · mã: '+esc(String(e&&(e.code||e.message)||'?')));
+    say(isPerm(e)?'Lời mời đã hết hạn hoặc tổ đội đã đầy':errMsg(e));
+    if(isPerm(e))S.net.inviteDrop(from)}
+  finally{S.accepting=0}
   S.invites=S.invites.filter(i=>i.from!==from);ui()}
 function doDecline(from){S.net.inviteDrop(from);S.invites=S.invites.filter(i=>i.from!==from);ui()}
 async function doLeave(){
@@ -2097,7 +2109,7 @@ Q('#cv').addEventListener('pointerdown',e=>{
 function ui(){
   bP.classList.toggle('off',!online()&&!!S.net);bP.classList.toggle('on2',online());
   bP.textContent=S.invites.length?'👥❗':'👥';
-  const box=Q('#mmi');box.innerHTML=S.invites.map(i=>`<div><span>📨 ${esc(i.n)} mời bạn vào tổ đội</span><button data-a="acc" data-u="${esc(i.from)}" style="font:700 12px inherit;padding:6px 10px;border-radius:8px;border:0;background:#5fd1a8;color:#06231a;cursor:pointer">Đồng ý</button><button data-a="dec" data-u="${esc(i.from)}" style="font:700 12px inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);cursor:pointer">Từ chối</button></div>`).join('');
+  const box=Q('#mmi');const mh=S.invites.map(i=>`<div><span>📨 ${esc(i.n)} mời bạn vào tổ đội</span><button data-a="acc" data-u="${esc(i.from)}" style="font:700 12px inherit;padding:6px 10px;border-radius:8px;border:0;background:#5fd1a8;color:#06231a;cursor:pointer">Đồng ý</button><button data-a="dec" data-u="${esc(i.from)}" style="font:700 12px inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);cursor:pointer">Từ chối</button></div>`).join('');if(mh!==S.mmiHtml){S.mmiHtml=mh;box.innerHTML=mh}
   if(S.open)renderPanel()}
 function partyFrames(){
   const el=Q('#mmpf');if(!el)return;
@@ -2602,11 +2614,17 @@ net.partyInvite=(target,pid,name)=>set(ref(db,'invites/'+target+'/'+net.uid),{n:
 net.inviteDrop=from=>remove(ref(db,'invites/'+net.uid+'/'+from)).catch(()=>{});
 net.partyAccept=async(inv,info)=>{
   /* rule RTDB không đếm được số thành viên → giới hạn 5 người kiểm ở đây (giống ở phía đội trưởng khi mời) */
-  const cnt=(await get(ref(db,'parties/'+inv.p+'/members'))).numChildren();
-  if(cnt>=5){const e=new Error('permission-denied: party full');e.code='permission-denied';throw e}
-  await set(ref(db,'parties/'+inv.p+'/members/'+net.uid),info);
-  await set(ref(db,'userParty/'+net.uid),inv.p);
-  await remove(ref(db,'invites/'+net.uid+'/'+inv.from)).catch(()=>{})};
+  let step='đếm thành viên (get parties/…/members)';
+  try{
+    const cnt=(await get(ref(db,'parties/'+inv.p+'/members'))).numChildren();
+    if(cnt>=5){const e=new Error('permission-denied: party full');e.code='permission-denied';throw e}
+    step='ghi thành viên (set parties/…/members/uid)';
+    await set(ref(db,'parties/'+inv.p+'/members/'+net.uid),info);
+    step='ghi userParty';
+    await set(ref(db,'userParty/'+net.uid),inv.p);
+    step='xoá lời mời';
+    await remove(ref(db,'invites/'+net.uid+'/'+inv.from)).catch(()=>{})
+  }catch(e){try{e.step=step}catch(_){}throw e}};
 net.partyLeave=async(pid,isLeader,nextUid)=>{
   await remove(ref(db,'pstat/'+pid+'/'+net.uid)).catch(()=>{});
   if(isLeader&&!nextUid){await remove(ref(db,'chat/party/'+pid)).catch(()=>{});await remove(ref(db,'parties/'+pid))}
