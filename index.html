@@ -2616,7 +2616,7 @@ net.partyAccept=async(inv,info)=>{
   /* rule RTDB không đếm được số thành viên → giới hạn 5 người kiểm ở đây (giống ở phía đội trưởng khi mời) */
   let step='đếm thành viên (get parties/…/members)';
   try{
-    const cnt=(await get(ref(db,'parties/'+inv.p+'/members'))).numChildren();
+    const mv=(await get(ref(db,'parties/'+inv.p+'/members'))).val(),cnt=mv?Object.keys(mv).length:0;   /* snapshot Firebase mới không còn numChildren() */
     if(cnt>=5){const e=new Error('permission-denied: party full');e.code='permission-denied';throw e}
     step='ghi thành viên (set parties/…/members/uid)';
     await set(ref(db,'parties/'+inv.p+'/members/'+net.uid),info);
