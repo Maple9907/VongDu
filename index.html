@@ -15,7 +15,7 @@ body{position:fixed;inset:0}
 .stage{position:relative;flex:0 0 auto;text-align:center}
 .stage canvas{height:min(62vh,340px);aspect-ratio:1;border-radius:18px;border:1px solid var(--ln);background:#0a1322;display:block}
 .stage input{margin-top:8px;width:100%;background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:7px;color:var(--tx);text-align:center;font:600 14px inherit;outline:0}
-.stage input:focus-visible{border-color:var(--gd)}
+.stage input:focus-visible{border-color:var(--gd)}#nme{margin-top:5px}#nme:empty{display:none}
 .side{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 80px);overflow:auto}
 h3{font-size:16px;font-weight:800}.mu{color:var(--mu);font-size:12.5px;line-height:1.45}
 #cls{display:flex;flex-wrap:wrap;gap:6px}
@@ -105,7 +105,7 @@ button,input{font-family:inherit}.btn{font-weight:800;font-size:14px}.cc{font-we
 <div id="s1" class="scr on">
  <div class="logo">THIÊN PHÚ<i>VÕNG DU</i></div>
  <div class="row">
-  <div class="stage"><canvas id="cv1" width="420" height="420"></canvas><input id="nm" maxlength="14" value="Vô Danh" aria-label="Tên nhân vật"></div>
+  <div class="stage"><canvas id="cv1" width="420" height="420"></canvas><input id="nm" maxlength="14" value="" placeholder="Nhập tên nhân vật" autocomplete="off" spellcheck="false" aria-label="Tên nhân vật"><div id="nme" class="mu" role="alert" style="color:#ff8a8a"></div></div>
   <div class="side"><h3 id="h1">Chọn chức nghiệp</h3><div id="cls"></div><div class="info" id="ci"></div>
    <button class="btn" id="go1">Xác nhận chức nghiệp</button>
    <button class="btn" id="swc" hidden></button>
@@ -631,7 +631,18 @@ function lockChar(){const c=CL[sv.cls],T=TL[sv.tl];sel=sv.cls;aura=RC[T.r];
 if(sv&&sv.tl>=0){lockChar();$('#cont').hidden=false;$('#del').hidden=!DEVOK}
 $('#cont').onclick=()=>begin(sv);
 $('#del').onclick=function(){if(this.dataset.k){rm();sv=null;Promise.race([Promise.resolve(window.cloudWipe&&window.cloudWipe()),new Promise(r=>setTimeout(r,4000))]).catch(()=>{}).then(()=>location.reload())}else{this.dataset.k=1;this.textContent='Bấm lần nữa để xóa hẳn'}};
-$('#go1').onclick=function(){if(sv&&sv.tl>=0&&!this.dataset.k){this.dataset.k=1;this.textContent='Đã có nhân vật! Bấm lần nữa để tạo mới (mất tiến trình cũ)';return}aura=null;show(2)};
+/* Tên nhân vật phải duy nhất toàn server (không phân biệt hoa/thường/dấu): kiểm tra sớm ở đây, giữ chỗ thật ở cloudEnsureName() sau khi rút thiên phú */
+function cleanName(n){return String(n==null?'':n).replace(/\s+/g,' ').trim().slice(0,14)}
+$('#nm').oninput=()=>{$('#nme').textContent=''};
+$('#go1').onclick=async function(){if(sv&&sv.tl>=0&&!this.dataset.k){this.dataset.k=1;this.textContent='Đã có nhân vật! Bấm lần nữa để tạo mới (mất tiến trình cũ)';return}
+ if(this.dataset.b)return;const inp=$('#nm'),err=$('#nme'),nm=cleanName(inp.value);
+ if(!nm){err.textContent='Hãy nhập tên nhân vật';inp.focus();return}
+ this.dataset.b=1;const lb=this.textContent;this.textContent='Đang kiểm tra tên...';let r='unknown';
+ try{if(window.cloudNameCheck)r=await Promise.race([window.cloudNameCheck(nm),new Promise(x=>setTimeout(()=>x('unknown'),6000))])}catch(e){}
+ delete this.dataset.b;this.textContent=lb;
+ if(r==='bad'){err.textContent='Tên cần có ít nhất 1 chữ cái hoặc chữ số';inp.focus();return}
+ if(r==='taken'){err.textContent='Tên "'+nm+'" đã có người dùng, hãy chọn tên khác';inp.focus();return}
+ err.textContent='';inp.value=nm;aura=null;show(2)};
 /* ---- Màn thiên phú ---- */
 RK.forEach(r=>{const s=document.createElement('span');s.className='ck'+(W[r]?'':' rs');s.id='k'+r;s.textContent=r;s.style.setProperty('--c',RC[r]);s.onclick=()=>{if(dev){fc=fc==r?null:r;document.querySelectorAll('.ck').forEach(e=>e.classList.toggle('on',e.id=='k'+fc))}};$('#lad').append(s)});
 const card=$('#card');if(DEVOK)$('#td').textContent='Chế độ thử: chạm một hạng trên thang để ép kết quả rút (chạm lại để bỏ chọn).';
@@ -642,7 +653,7 @@ function done(){let tot=0;for(const r in W)tot+=W[r];let q=M.random()*tot,rk='F'
  card.classList.remove('shake');card.classList.add('rev');card.style.setProperty('--c',RC[rk]);aura=RC[rk];
  $('#rk').textContent=rk;$('#tn').textContent=T.n;$('#td').textContent=T.d;$('#te').textContent='';
  document.querySelectorAll('.ck').forEach(e=>e.classList.toggle('on',e.id=='k'+rk));
- $('#go2').hidden=false;$('#roll').hidden=true;sv={cls:sel,tl,name:$('#nm').value.trim()||'Vô Danh',lv:1,xp:0,map:0,gd:START_GOLD};save()}
+ $('#go2').hidden=false;$('#roll').hidden=true;sv={cls:sel,tl,name:cleanName($('#nm').value)||'Vô Danh',lv:1,xp:0,map:0,gd:START_GOLD};save();if(window.cloudEnsureName)window.cloudEnsureName()}
 $('#go2').onclick=()=>begin(sv);
 function save(){if(window.noSave||!G&&!sv)return;if(G)sv={cls:G.cls,tl:G.tl,name:G.name,lv:G.lv,xp:G.xp,kills:G.kills,al:G.al,map:G.map,vc:G.vc,hp:G.dead?0:G.hp,mp:G.mp,rc:G.rc>0?M.round(G.rc):0,bc:G.bc>0?M.round(G.bc):0,x:M.round(G.x),y:M.round(G.y),eq:G.eq,es:G.es,gm:G.gm,rs:G.rs,fg:G.fg,iv:2,dm:G.dm,gd:G.gd,bk:G.bk,pl:XL?0:1,bcnt:G.bowc||0,tankc:G.tankc||0,au:G.au,br:G.br};sv.ts=Date.now();wr(JSON.stringify(sv));if(window.cloudPush)window.cloudPush(sv)}
 /* ---- Game ---- */
@@ -717,7 +728,7 @@ $('#sprs').onclick=function(){if(!G||!SPO)return;if(!rsK){rsK=1;this.textContent
 $('#tb0').onclick=()=>spTab(0);$('#tb1').onclick=()=>spTab(1);$('#tb2').onclick=()=>spTab(2);$('#tb3').onclick=()=>spTab(3);$('#tb4').onclick=()=>spTab(4);
 $('#spx').onclick=()=>tsp(0);$('#sp').addEventListener('pointerdown',e=>{if(e.target==e.currentTarget)tsp(0)});
 HUDE.onclick=()=>{tsp();HUDE.blur()};HUDE.onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();tsp()}};
-function sepM(){const a=G.mons;for(let i=0;i<a.length;i++){const p=a[i];if(p.hp<=0)continue;for(let j=i+1;j<a.length;j++){const q=a[j];if(q.hp<=0)continue;const dx=q.x-p.x,dy=q.y-p.y,dd=M.hypot(dx,dy),mn=(MT[p.t].r+MT[q.t].r)*.85;if(dd<mn){if(dd<.01){p.x-=1;q.x+=1}else{const k=(mn-dd)*.25/dd;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}}}}}
+function sepM(){if(window.SRV&&SRV.on)return;const a=G.mons;for(let i=0;i<a.length;i++){const p=a[i];if(p.hp<=0)continue;for(let j=i+1;j<a.length;j++){const q=a[j];if(q.hp<=0)continue;const dx=q.x-p.x,dy=q.y-p.y,dd=M.hypot(dx,dy),mn=(MT[p.t].r+MT[q.t].r)*.85;if(dd<mn){if(dd<.01){p.x-=1;q.x+=1}else{const k=(mn-dd)*.25/dd;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}}}}}
 function nm(rg){let b=null,bd=rg;for(const q of G.mons)if(q.hp>0){const d=M.hypot(q.x-G.x,q.y-G.y);if(d<bd){bd=d;b=q}}return b}
 function begin(s){if(!s.iv){s.eq=(s.eq||[]).map(x=>x&&x.r>0?{...x,r:x.r+1}:x);s.iv=2}G={cls:s.cls,tl:s.tl,name:s.name,lv:s.lv,xp:s.xp,al:alOf(s),kills:s.kills||0,rc:s.rc>0?s.rc:0,inv:0,mp:0,cdk:[0,0,0],sh:0,shT:0,bf:null,ht:0,ac:0,dx:1,dy:0,hp:1,x:0,y:0,f:1,sw:0,cd:0,tgt:null,auto:0,au:AS(s.au,s.am),br:s.br===0||s.br===1?s.br:-1,dead:0,mons:[],fade:0,pcd:0,mv:0,pk:0,mk:0,gd:M.max(0,M.floor(+s.gd||0)),gm:[0,1,2,3].map(t=>[...Array(10)].map((_,l)=>M.max(0,((s.gm||[])[t]||[])[l]|0))),rs:M.max(0,s.rs|0),fg:FGO(s.fg),es:ESL(s),dm:M.max(0,s.dm|0),vc:Array.isArray(s.vc)?s.vc.filter(x=>CM[x]):0,eq:[0,1,2,3,4,5].map(i=>FP(CI((s.eq||[])[i],i),s.cls)),bk:Array.isArray(s.bk)?s.bk.filter(x=>MP[x]):[],ps:0,pd:0,sl:0,pj:[],hq:[],hc:0,lc:0,kc:0,kz:0,nh:0,hz:0,hzt:0,zs:0,zt:0,pf:0,tlt:0,bc:s.bc>0?s.bc:0,ks:0,ro:0,bowc:s.bcnt||0,tankc:s.tankc||0,zn:[],stl:0,stb:null,rfT:0,rfv:0,rfr:0,hot:0,hv:0,jp:0};
  fgMig();const z=st(),gone=s.hp===0,sm=typeof s.map=='number'?OLD[s.map]:s.map,sm2=MP[sm]?sm:'kn0',rr=CM[MP[sm2].ct].rs,mi=gone?rr[0]:sm2,sx=gone?rr[1]:typeof s.x=='number'?s.x:(mi!='kn0'?300:260),sy=gone?rr[2]:typeof s.y=='number'?s.y:400;if(!G.vc){G.vc=[];for(const c of CT){G.vc.push(c.id);if(c.id==MP[sm2].ct)break}}
@@ -914,7 +925,7 @@ function upd(dt){const s=st(),m=MP[G.map],E=TE();if(G.kkT>0)G.kkT-=dt;if(G.kkc>0
  if(G.stl>0&&(G.stl-=dt)<=0)G.stb=null;if(G.rfT>0)G.rfT-=dt;if(G.jp>0)G.jp-=dt;if(G.hot>0){G.hot-=dt;G.hp=M.min(s.mhp,G.hp+G.hv*dt);G.ps=G.sl=0;if((G.hnt=(G.hnt||0)-dt)<=0){G.hnt=1;if(G.hp<s.mhp-1)ft(G.x,G.y-90,'+'+M.round(G.hv),'#7dffb0',.7)}}procZ(dt,s);
   const wa=G.auto||G.ah||keys[' ']||keys.j;let at=tg&&M.hypot(tg.x-G.x,tg.y-G.y)<=s.rg+MT[tg.t].r*.6?tg:near(s.rg);if(at&&wa&&G.cd<=0&&!(G.fw>0)){G.cd=s.as/(G.pf>0&&G.pf--?2:1);hit(at,s);SFX.atk();if(SHT[G.cls]&&SHT[G.cls].atk)G.anS=['atk',anNow()]}if(G.auto&&(G.ac-=dt)<=0){G.ac=.4;const A=G.au;if(A.hp&&G.hp<s.mhp*A.hpP/100&&G.gd-POC()>=A.rs)pot(1);if(A.mp&&G.mp<s.mmp*A.mpP/100&&G.gd-MPC()>=A.rs)mpot(1);if(at&&G.mp>=s.mmp*A.sm/100)for(let i=SK[G.cls].length-1;i>=0;i--){const k=SK[G.cls][i];if(!A.sk[i]||k.hold&&G.hp>s.mhp*.6&&!(k.zk=='r'&&window.MMO&&MMO.allyLow&&MMO.allyLow(60)))continue;cast(i,1)}}
  G.hp=M.min(s.mhp,G.hp+s.mhp*(m.safe?.05:((E.hr?.012:.004)+s.hg)*(1+(E.fr||0)))*dt);
- AI2.begin(s,m);for(const q of G.mons){const d=MT[q.t];if(q.mn&&!q.gone)AI2.minion(q);
+ AI2.begin(s,m);for(const q of G.mons){if(q.sv){SRV.mtick(q,dt,s);continue}const d=MT[q.t];if(q.mn&&!q.gone)AI2.minion(q);
   if(q.hp<=0){if((q.rt-=dt)<=0&&(q.rt<=-2||M.hypot(q.hx-G.x,q.hy-G.y)>160)){q.hp=d.hp;q.bk=d.b?d.hp*.2:0;q.et=q.p2=q.p3=q.sh2=0;q.x=q.hx;q.y=q.hy;q.ag=0;q.sl=0;q.rl=0;q.tw=0;q.stn=q.fr=q.ro=q.ad=q.kn=q.sf=0;q.dots=null;AI2.reset(q,d)}continue}
   if(q.sl>0&&(q.sl-=dt)<=0)q.sf=0;q.sc-=dt;if(q.ad>0)q.ad-=dt;if(q.ro>0)q.ro-=dt;if(q.kn>0)q.kn-=dt;if(q.fk>0)q.fk-=dt;if(q.bf2>0)q.bf2-=dt;if(q.rv>0)q.rv-=dt;if(q.sti>0)q.sti-=dt;if(q.stg>0)q.stg-=dt;if(q.rlc>0)q.rlc-=dt;const en=d.b&&q.hp<d.hp*.5,ms=d.sp*(q.ro>0?0:1)*(q.sl>0?(q.sf||.45):1)*(en?1.3:1)*(q.bf2>0?1.25:1)*(q.af==1?1.25:1),ak=d.atk*(q.ad>0?1-(q.av||.2):1)*(d.b?(q.et>180?2:1)*(q.hp<d.hp*.5?1.2:1):1)*(q.bf2>0?1.2:1),ba=(d.b?(q.et>180?1.5:1)*(q.hp<d.hp*.2?1.3:1):1)*(q.af==1?1.2:1),dx=G.x-q.x,dy=G.y-q.y,dd=M.hypot(dx,dy)||1,hh=M.hypot(q.hx-q.x,q.hy-q.y);if(d.b){if(q.ag)q.et=(q.et||0)+dt;else q.et=q.en2=0;const ty=q.y-BH(d)-60;if(q.et>180&&!q.en2){q.en2=1;ft(q.x,ty,'CUỒNG NỘ!','#ff4d4d',1.4)}if(q.hp<d.hp*.5&&!q.p2){q.p2=1;ft(q.x,ty,'GIAI ĐOẠN 2','#ffd43b',1.2);AI2.phase(q,d,2)}if(q.hp<d.hp*.2&&!q.p3){q.p3=1;q.sh2=d.hp*.1;ft(q.x,ty,'LÁ CHẮN ẢO','#8fe0ff',1.2);AI2.phase(q,d,3)}}
   if(q.dots){for(const o of q.dots){if(q.hp<=0)break;o.tk-=dt;if(o.tk<=0){o.tk+=o.iv;o.n--;hit(q,s,o.m,o.f,1)}}q.dots=q.dots.filter(o=>o.n>0);if(q.hp<=0)continue}if(q.stn>0){if((q.stn-=dt)<=0&&d.b)q.sti=2.5;q.tw=0;q.dsh=0;q.sq=null;q.cmb=0;q.tf=q.tu=null;continue}if(q.fr>0){q.fr-=dt;q.tw=0;q.dsh=0;q.sq=null;q.cmb=0;q.tf=q.tu=null;q.x-=dx/dd*d.sp*1.1*dt;q.y-=dy/dd*d.sp*1.1*dt;q.f=dx>=0?-1:1;continue}
@@ -1685,13 +1696,14 @@ const saveMute=()=>{try{localStorage.setItem('mmo_mute',JSON.stringify([...S.mut
  me=()=>S.net&&S.net.uid||'',
  NOW=()=>S.net&&S.net.ready?S.net.now():Date.now(),
  online=()=>!!(S.net&&S.net.ready&&S.net.connected),
- useShared=()=>online()&&S.bossLoaded&&!S.bossErr,
- fbMode=()=>!useShared()&&(S.bossErr||Date.now()-S.boot>9000),
+ SVW=()=>!!(window.SRV&&window.SRV.wanted()),
+ useShared=()=>!SVW()&&online()&&S.bossLoaded&&!S.bossErr,
+ fbMode=()=>!SVW()&&!useShared()&&(S.bossErr||Date.now()-S.boot>9000),
  localAlive=id=>!S.lb[id]||Date.now()-S.lb[id]>=RESP,
  fmt=ms=>{ms=Math.max(0,Math.ceil(ms/1000));return String(ms/60|0).padStart(2,'0')+':'+String(ms%60).padStart(2,'0')},
  bossIds=()=>Object.keys(MP).filter(id=>MP[id].bo).sort((a,b)=>MT[MP[a].bo.t].lv-MT[MP[b].bo.t].lv),
  isPerm=e=>/permission/i.test(String(e&&(e.code||e.message)||'')),
- errMsg=e=>isPerm(e)?'Máy chủ từ chối (hãy cập nhật rule Firebase)':'Lỗi mạng, thử lại sau',
+ errMsg=e=>isPerm(e)?(window.MMO_WS?'Không thực hiện được (hết hạn, đã đầy hoặc không đủ quyền)':'Máy chủ từ chối (hãy cập nhật rule Firebase)'):'Lỗi mạng, thử lại sau',
  me0=()=>({n:String(G.name||'?').slice(0,14),c:G.cls|0,l:G.lv|0});
 function ruleWarn(){if(S.warned++)return;say('⚠️ Chưa cập nhật rule Realtime Database · boss tạm chạy chế độ offline')}
 
@@ -1719,7 +1731,7 @@ function remoteDeath(bq,id,b){
   }else{bq.hp=0;bq.rt=1e9;say((b&&b.by?b.by:'Người chơi khác')+' đã hạ boss')}
   S.myDmg[id]=0}
 function bossSync(){
-  if(!G||scr!==3)return;
+  if(!G||scr!==3||SVW())return;
   const id=G.map,m=MP[id];if(!m||!m.bo)return;
   const sh=useShared();if(!sh&&!fbMode())return;
   const b=sh?S.bs[id]:null;let alive,cyc;
@@ -1751,7 +1763,7 @@ function onBosses(v){
 /* ================= NGƯỜI CHƠI KHÁC ================= */
 function payload(){
   const g=G;return{n:String(g.name||'?').slice(0,14),c:g.cls|0,l:g.lv|0,x:Math.round(g.x),y:Math.round(g.y),f:g.f<0?-1:1,m:g.mv?1:0,
-   h:g.dead?0:Math.max(0,Math.min(100,Math.round(g.hp/S.mhp*100))),d:g.dead?1:0,a:S.aName||'',q:S.aSeq|0,p:S.party?S.party.id:''}}
+   h:g.dead?0:Math.max(0,Math.min(100,Math.round(g.hp/S.mhp*100))),d:g.dead?1:0,a:S.aName||'',q:S.aSeq|0,p:S.party?S.party.id:'',sl:g.stl>0?1:0,wk:(TE().wk?1:0)}}
 function tickNet(){
   if(!G||scr!==3||!S.net||!S.net.ready||S.kicked)return;
   const now=Date.now();
@@ -1759,8 +1771,8 @@ function tickNet(){
   if(G.anS&&G.anS!==S.lastAn){S.lastAn=G.anS;S.aName=String(G.anS[0]).slice(0,12);S.aSeq=(S.aSeq+1)&255}
   if(!S.net.connected)return;
   const p=payload(),o=S.sent;
-  const ch=!o||Math.abs(p.x-o.x)>=3||Math.abs(p.y-o.y)>=3||p.f!==o.f||p.m!==o.m||Math.abs(p.h-o.h)>=2||p.d!==o.d||p.q!==o.q||p.l!==o.l||p.p!==o.p;
-  if((ch&&now-S.sentAt>=220)||now-S.sentAt>=10000){S.sent=p;S.sentAt=now;S.net.pos(p)}
+  const ch=!o||Math.abs(p.x-o.x)>=3||Math.abs(p.y-o.y)>=3||p.f!==o.f||p.m!==o.m||Math.abs(p.h-o.h)>=2||p.d!==o.d||p.q!==o.q||p.l!==o.l||p.p!==o.p||p.sl!==o.sl;
+  if((ch&&now-S.sentAt>=(SVW()?100:220))||now-S.sentAt>=10000){S.sent=p;S.sentAt=now;S.net.pos(p)}
   if(S.party&&now-S.psAt>=1500){S.psAt=now;S.net.pstat({m:G.map,x:p.x,y:p.y,h:p.h,l:p.l,c:p.c,n:p.n})}}
 function onPresence(type,uid,d){
   if(uid===me())return;
@@ -2092,7 +2104,7 @@ const MMO=window.MMO={
     net.h.p=onPresence;net.h.bosses=onBosses;
     net.h.bossErr=()=>{S.bossErr=true;ruleWarn()};
     net.h.err=(w,e)=>{if(isPerm(e))ruleWarn()};
-    net.h.party=onParty;net.h.pstat=v=>{S.pst=v||{}};net.h.invites=onInvites;
+    net.h.party=onParty;net.h.pstat=v=>{S.pst=v||{}};net.h.invites=onInvites;net.h.sys=m=>sys(esc(m));
     net.h.fx=onFx;net.h.fxErr=e=>{if(!isPerm(e)||S.fxWarn)return;S.fxWarn=1;sys('⚠️ Kỹ năng hỗ trợ đồng đội cần cập nhật rule Firebase (nhánh pfx) · hiệu ứng lên bản thân vẫn hoạt động')};
     net.h.kicked=()=>{
       if(S.kicked)return;S.kicked=true;window.noSave=1;
@@ -2134,6 +2146,145 @@ if(G&&scr===3)MMO.onMap(G.map);
 })();
 
 </script>
+<script id="mmo-srv">
+/* ===== SRV · quái / boss / hazard chạy trên MÁY CHỦ GAME (replica phía client) =====
+   Bật khi SERVER_URL (module mmo-net) khác rỗng và đã kết nối. Mất kết nối → quái chuyển lại thành quái cục bộ (chơi offline như cũ).
+   Quy tắc:
+   · SRV-1  Quái là bản sao (q.sv=1): server giữ vị trí/HP/AI; client chỉ nội suy + vẽ, KHÔNG chạy AI cục bộ.
+   · SRV-2  Sát thương lên quái: mọi lần q.hp/q.bk/q.sh2 giảm đều được bắt bằng accessor và gửi gộp mỗi 100ms (client vẫn tự tính sát thương như cũ).
+   · SRV-3  Trạng thái khống chế (cc) gửi lên server; server áp cho mọi người cùng thấy.
+   · SRV-4  Sát thương lên người chơi do server quyết định "ai trúng" (hazard/đạn/cận chiến) rồi gửi sự kiện h → client chạy hurt() với giáp/né/khiên của chính nó.
+   · SRV-5  Quái chết: server báo die cho người đã gây sát thương → client chạy đường thưởng cũ (EXP/rơi đồ) đúng 1 lần (cờ q.rw). */
+(function () {
+  const M = Math, now = () => performance.now();
+  const SRV = window.SRV = { on: false, seq: 0, ch: 0, mons: new Map(), hq: [], pend: new Map(), noRep: 0, mute: 0, ready: false };
+  const NET = () => window.MMO_NET;
+  const cl = (v, a, b) => v < a ? a : v > b ? b : v;
+  SRV.wanted = () => !!(window.MMO_WS && NET() && NET().connected);
+  SRV.me = () => G ? { n: String(G.name || '?').slice(0, 14), c: G.cls | 0, l: G.lv | 0, x: M.round(G.x), y: M.round(G.y) } : {};
+  const send = o => { const n = NET(); return n && n.send ? n.send(o) : false };
+
+  /* ---- replica ---- */
+  const ACC = { hp: 0, bk: 1, sh2: 2 };
+  function pend(q, k, dd) {
+    let p = SRV.pend.get(q.id); if (!p) SRV.pend.set(q.id, p = [q.id, 0, 0, 0]);
+    p[1 + ACC[k]] += dd; q.lastHit = now();
+  }
+  function accessors(q) {
+    for (const k of ['hp', 'bk', 'sh2']) Object.defineProperty(q, k, {
+      enumerable: true, configurable: true,
+      get() { return this['_' + k] },
+      set(v) {
+        const o = this['_' + k];
+        if (!SRV.noRep && o - v > 0) { pend(this, k, o - v); if (k === 'hp' && v <= 0 && o > 0) this.rw = 1 }   // kill cục bộ → đã nhận thưởng qua hit()
+        this['_' + k] = v;
+      }
+    });
+  }
+  function plain(q) { for (const k of ['hp', 'bk', 'sh2']) { const v = q['_' + k]; Object.defineProperty(q, k, { value: v, writable: true, enumerable: true, configurable: true }) } }
+  function mk(e) {
+    const d = MT[e[1]] || MT[0];
+    const q = { id: e[0], t: e[1], sv: 1, x: e[2], y: e[3], nx: e[2], ny: e[3], hx: e[2], hy: e[3], f: e[4], ph: e[16] || 0, ag: 0, cd: 0, rt: 0, wx: e[2], wy: e[3], wt: 3, sc: 1, tw: 0, rl: 0, mn: e[15] ? 1 : 0, b: d.b ? 1 : 0, af: e[14] || 0, et: 0, rw: 0, _hp: e[5], _bk: e[6], _sh2: e[7] };
+    accessors(q); return q;
+  }
+  function apply(q, e) {
+    q.nx = e[2]; q.ny = e[3]; q.f = e[4];
+    const t = now(), idle = t - (q.lastHit || 0) > 700;
+    for (const [k, i] of [['_hp', 5], ['_bk', 6], ['_sh2', 7]]) { const v = e[i]; if (v < q[k] || idle) q[k] = v }      // chỉ giảm theo server, trừ khi không còn đòn đang bay
+    if (e[5] > 0 && q.rw && idle) { q.rw = 0; q.rt = 0 }                                                          // hồi sinh
+    if (e[5] <= 0 && !q.rt) q.rt = 8;
+    const st = e[8];
+    q.stn = e[19] > 0 ? e[19] : 0; q.stt = e[18] || 'stn'; q.sl = st & 2 ? (q.sl > 0 ? q.sl : 1) : 0; q.fr = st & 4 ? 1 : 0; q.ag = st & 8 ? 1 : 0; q.rl = st & 16 ? 1 : 0; q.p2 = st & 32 ? 1 : 0; q.p3 = st & 64 ? 1 : 0; q.ro = st & 128 ? 1 : 0; q.dsh = st & 256 ? .3 : 0; q.bf2 = st & 512 ? 1 : 0;
+    q.tw = e[9]; q.tt = e[10]; q.tk = e[11] || undefined; q.tx = e[12]; q.ty = e[13]; q.af = e[14] || 0;
+    if (q.b && e[17] > 0) q.respIn = e[17];
+  }
+  SRV.mtick = function (q, dt, s) {                       // được upd() gọi cho mỗi replica (thay cho AI cục bộ)
+    const k = 1 - M.exp(-dt * 12), dx = q.nx - q.x, dy = q.ny - q.y;
+    if (dx * dx + dy * dy > 360000) { q.x = q.nx; q.y = q.ny } else { q.x += dx * k; q.y += dy * k }
+    if (q.tw > 0) q.tw = M.max(0, q.tw - dt); if (q.fk > 0) q.fk -= dt; if (q.kn > 0) q.kn -= dt;
+    if (q.hp > 0 && q.dots) { for (const o of q.dots) { o.tk -= dt; if (o.tk <= 0) { o.tk += o.iv; o.n--; hit(q, s, o.m, o.f, 1) } } q.dots = q.dots.filter(o => o.n > 0) }
+  };
+
+  /* ---- vòng đời map / kết nối ---- */
+  SRV.reset = function () { SRV.mons.clear(); SRV.hq.length = 0; SRV.pend.clear(); SRV.on = false };
+  SRV.onJoined = function (m) {
+    if (!G || m.map !== G.map) return;
+    SRV.reset(); SRV.seq = m.seq; SRV.ch = m.ch; SRV.on = true; G.mons = []; G.pj = G.pj.filter(p => !p.vis); G.hq = [];
+    const n = document.querySelector('#mn'); if (n) n.textContent = MP[G.map].n + ' · Kênh ' + m.ch;
+  };
+  SRV.onDown = function () {                              // mất server → quái thành quái cục bộ, game tiếp tục offline
+    if (!G) return;
+    for (const q of G.mons) if (q.sv) { delete q.sv; plain(q); q.hx = q.x; q.hy = q.y; q.wx = q.x; q.wy = q.y; q.ag = 0; q.tw = 0; q.sq = null; if (q.hp <= 0) q.rt = M.max(q.rt || 0, 8) }
+    G.pj = G.pj.filter(p => !p.vis); SRV.reset();
+  };
+  SRV.onSnap = function (m, emitP) {
+    if (!SRV.on || !G || scr !== 3) return;
+    const mp = MP[G.map];
+    if (m.m) for (const e of m.m) {
+      let q = SRV.mons.get(e[0]);
+      if (!q) { q = mk(e); SRV.mons.set(q.id, q); G.mons.push(q) }
+      else { if (q.t !== e[1]) q.t = e[1]; apply(q, e) }
+    }
+    if (m.r && m.r.length) { const rm = new Set(m.r); for (const id of m.r) { const q = SRV.mons.get(id); if (q) { q._hp = 0; SRV.mons.delete(id); if (G.tgt === q) G.tgt = null } } G.mons = G.mons.filter(q => !(q.sv && rm.has(q.id))) }
+    if (m.p) for (const a of m.p) {                      // [uid,x,y,f,mv,h,dead,anim,seq,lv,cls,name,pid]
+      emitP(SRV._known.has(a[0]) ? 'chg' : 'add', a[0], { n: a[11], c: a[10], l: a[9], x: a[1], y: a[2], f: a[3], m: a[4], h: a[5], d: a[6], a: a[7], q: a[8], p: a[12], ts: m.T });
+      SRV._known.add(a[0]);
+    }
+    if (m.rp) for (const u of m.rp) { SRV._known.delete(u); emitP('del', u, null) }
+    if (m.e) for (const e of m.e) ev(e, mp);
+  };
+  SRV._known = new Set();
+
+  /* ---- sự kiện từ server ---- */
+  function ev(e, mp) {
+    switch (e.e) {
+      case 'h': if (G && !G.dead && scr === 3) hurt(e.dm, e.t, !!e.po, !!e.sw, e.am, e.mg); break;
+      case 'pull': if (G && !G.dead) { G.x = cl(G.x + e.dx, 20, mp.w - 20); G.y = cl(G.y + e.dy, 50, mp.h - 12) } break;
+      case 'rb': G.x = e.x; G.y = e.y; break;
+      case 'ft': ft(e.x, e.y, e.s, e.c, e.k); break;
+      case 'fx': fx.push(e.f); break;
+      case 'hz': SRV.hq.push({ id: e.id, ty: e.ty, x: e.x, y: e.y, r: e.r, r0: e.r0, ux: e.ux, uy: e.uy, L: e.L, w: e.w, t: e.t, tt: e.t || .01, c: e.c, o: null }); break;
+      case 'hzx': { const i = SRV.hq.findIndex(z => z.id === e.id); if (i >= 0) SRV.hq.splice(i, 1); break }
+      case 'hzd': {
+        const i = SRV.hq.findIndex(z => z.id === e.id); if (i < 0) break; const z = SRV.hq[i]; SRV.hq.splice(i, 1);
+        fx.push(z.ty === 'l' ? { k: 'ln', x: z.x, y: z.y, ux: z.ux, uy: z.uy, L: z.L, w: z.w, c: z.c, t: 0 } : { k: 'a', x: z.x, y: z.y, r: z.r, c: z.c, t: 0 }); break
+      }
+      case 'pj': G.pj.push({ id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, l: e.l, c: e.c, z: e.z, vis: 1, dm: 0, hr: 0 }); break;
+      case 'pjx': { const p = G.pj.find(p => p.vis && p.id === e.id); if (p) p.l = 0; break }
+      case 'die': reward(e); break;
+    }
+  }
+  function reward(e) {                                    // SRV-5: nhận thưởng khi quái bị hạ (nếu chưa nhận qua hit() cục bộ)
+    const q = SRV.mons.get(e.id); if (!q || q.rw || !G || G.dead) return;
+    q.rw = 1; const lv0 = G.lv, hp0 = G.hp, mp0 = G.mp;
+    SRV.noRep = 1; SRV.mute = 1;
+    try { q.bk = 0; q.sh2 = 0; q._hp = M.max(1, q._hp); hit(q, st(), 1, 0, 1, 1e12) } catch (err) { console.warn('[srv] reward', err) }
+    SRV.noRep = 0; SRV.mute = 0;
+    if (G.lv === lv0 && G.hp > hp0) G.hp = hp0;           // chống hút máu 1e12 từ đòn "ảo"
+    q._hp = 0;
+  }
+
+  /* ---- gửi lên server ---- */
+  setInterval(() => {
+    if (!SRV.on || !SRV.pend.size) return;
+    const a = []; for (const p of SRV.pend.values()) a.push([p[0], M.round(p[1]), M.round(p[2]), M.round(p[3])]); SRV.pend.clear();
+    for (let i = 0; i < a.length; i += 24) send({ t: 'hit', a: a.slice(i, i + 24) });
+  }, 100);
+
+  /* ---- móc vào game ---- */
+  { const _ft = ft; ft = function (x, y, s, c, z) { if (SRV.mute && /^\d{7,}/.test(String(s))) return; return _ft(x, y, s, c, z) } }
+  { const _cc = cc; cc = function (q, ty, v, p) { if (q && q.sv && SRV.on && !SRV.noRep) send({ t: 'cc', id: q.id, ty, v, p }); return _cc.apply(this, arguments) } }
+  { const _load = load; load = function (i, x, y) { const r = _load.apply(this, arguments); SRV.reset(); SRV._known.clear(); if (SRV.wanted()) { G.mons = [] } return r } }
+  { const _upd = upd; upd = function (dt) { if (SRV.hq.length) { for (const z of SRV.hq) z.t -= dt; SRV.hq = SRV.hq.filter(z => z.t > -.6) } return _upd(dt) } }
+  { const _dt = AI2.drawTel; AI2.drawTel = function (c) { if (!SRV.hq.length) return _dt.call(this, c); const o = G.hq; G.hq = o.concat(SRV.hq); try { _dt.call(this, c) } finally { G.hq = o } } }
+  { const _pP = AI2.procP; AI2.procP = function (dt) {   // đạn của server: chỉ bay + vẽ, không tự gây sát thương
+      const a = G.pj; if (!a.length || !a.some(p => p.vis)) return _pP.call(this, dt);
+      const V = a.filter(p => p.vis); G.pj = a.filter(p => !p.vis); _pP.call(this, dt);
+      for (const p of V) { p.x += p.vx * dt; p.y += p.vy * dt; if ((p.l -= dt) > 0) G.pj.push(p) }
+    } }
+})();
+
+</script>
 <script type="module">
 /* ===== CLOUD: Firebase Auth (ẩn danh + Google) + Firestore (lưu tiến trình, bảng xếp hạng) ===== */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
@@ -2149,6 +2300,7 @@ const app=initializeApp({
 const auth=getAuth(app),db=getFirestore(app),q=s=>document.querySelector(s);
 const KEY=typeof LS!=='undefined'?LS:'tpvd',DEV=()=>typeof DEVOK!=='undefined'&&DEVOK;
 let user=null,last=null,lastT=0,lastLv=0,timer=0,ready=false,busy=false,err='';
+let nameOk=false,myKey='',nameP=null,inRename=0,authRes;const authP=new Promise(r=>{authRes=r});
 
 /* --- bản lưu trên máy (giống wr()/rm() của game) --- */
 function clearLocal(){try{localStorage.removeItem(KEY)}catch(e){}try{sessionStorage.removeItem(KEY)}catch(e){}try{window.name=''}catch(e){}}
@@ -2162,11 +2314,12 @@ async function sync(){
     cts=c&&c.data?c.ts||0:0,lts=loc&&loc.tl>=0?loc.ts||0:0;
   if(cts>lts){applyLocal(c.data);reloadNow();return}
   lastLv=c?c.lv|0:0;
+  await ensureName();   /* nhân vật cũ trùng tên → hiện bảng bắt đổi tên, chưa đẩy gì lên cloud cho tới khi xong */
   if(lts>cts){ready=true;window.cloudPush(loc);flush()}
 }
 onAuthStateChanged(auth,async u=>{
   if(!u){try{await signInAnonymously(auth)}catch(e){err=e.code||'auth';paint()}return}
-  user=u;if(busy)return;ready=false;
+  user=u;authRes();if(busy)return;ready=false;
   try{await sync();err=''}catch(e){err=e.code||'sync'}
   ready=true;paint();
 });
@@ -2182,13 +2335,17 @@ async function flush(){
   const ts=s.ts||Date.now();
   try{await setDoc(doc(db,'players',user.uid),{data:JSON.stringify(s),ts,lv:s.lv|0,name:String(s.name||'')})}
   catch(e){err=e.code||'ghi';last=last||s;return}
-  if(!DEV())try{await setDoc(doc(db,'leaderboard',user.uid),{name:String(s.name||'Vô Danh').slice(0,14),lv:s.lv|0,kills:s.kills|0,cls:s.cls|0,tl:s.tl|0,ts})}catch(e){err=e.code||'bxh'}
+  if(DEV())return;
+  if(!nameGood(s)&&!inRename){try{await ensureName()}catch(e){}}   /* chưa xác nhận được tên (mất mạng...) → thử lại, chưa lên BXH */
+  if(nameGood(s))try{await setDoc(doc(db,'leaderboard',user.uid),{name:cleanName(s.name).slice(0,14)||'Vô Danh',lv:s.lv|0,kills:s.kills|0,cls:s.cls|0,tl:s.tl|0,ts})}catch(e){err=e.code||'bxh'}
 }
 window.cloudFlush=()=>last?flush():0;
 window.cloudHalt=()=>{last=null;ready=false;clearTimeout(timer);timer=0};
-window.cloudWipe=async()=>{if(!user)return;last=null;
+window.cloudWipe=async()=>{if(!user)return;last=null;let k=myKey;
+  if(!k)try{const p=await getDoc(doc(db,'players',user.uid));if(p.exists())k=nameKey(p.data().name)}catch(e){}
   await deleteDoc(doc(db,'players',user.uid));
-  await setDoc(doc(db,'leaderboard',user.uid),{name:'-',lv:0,kills:0,cls:0,tl:0,ts:Date.now()})};
+  await setDoc(doc(db,'leaderboard',user.uid),{name:'-',lv:0,kills:0,cls:0,tl:0,ts:Date.now()});
+  await releaseName(k)};
 addEventListener('visibilitychange',()=>{if(document.hidden&&last)flush()});
 
 /* --- liên kết / đăng nhập Google --- */
@@ -2198,7 +2355,8 @@ async function google(){
   catch(e){
     if(e.code==='auth/credential-already-in-use'&&confirm('Tài khoản Google này đã có dữ liệu game.\nĐăng nhập vào đó? Dữ liệu trên máy này sẽ được thay bằng dữ liệu của tài khoản đó.')){
       busy=true;ready=false;
-      try{const r=await signInWithCredential(auth,GoogleAuthProvider.credentialFromError(e)),
+      try{await releaseName(myKey||nameKey((typeof rd==='function'&&rd()||{}).name));
+        const r=await signInWithCredential(auth,GoogleAuthProvider.credentialFromError(e)),
         s=await getDoc(doc(db,'players',r.user.uid));
         window.noSave=1;if(s.exists()&&s.data().data)applyLocal(s.data().data);else clearLocal();location.reload();return}
       catch(x){busy=false;err=x.code||'google'}
@@ -2207,9 +2365,62 @@ async function google(){
   paint();
 }
 
+/* --- TÊN NHÂN VẬT DUY NHẤT ---
+   Firestore names/<khoá> = {uid,name,ts}. Khoá = tên bỏ dấu, viết thường, chỉ giữ a-z0-9
+   ("Nguyễn Văn A", "nguyen van a", "NguyenVanA" là CÙNG một tên). Rule chỉ cho TẠO khi khoá chưa tồn tại → không race được. */
+const cleanName=n=>String(n==null?'':n).replace(/\s+/g,' ').trim().slice(0,14);
+const nameKey=n=>cleanName(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9]/g,'');
+const locChar=()=>typeof rd==='function'?rd():null;
+const nameGood=s=>nameOk&&!!myKey&&nameKey(s&&s.name)===myKey;
+async function nameState(name){const key=nameKey(name);if(!key)return{st:'bad',key};
+  const s=await getDoc(doc(db,'names',key));
+  return{st:!s.exists()?'free':s.data().uid===user.uid?'mine':'taken',key}}
+/* → 'ok' | 'taken' | 'bad'; lỗi mạng/quyền thì throw */
+async function claimName(name){
+  const r=await nameState(name);if(r.st==='bad'||r.st==='taken')return r.st;
+  if(r.st==='free'){
+    try{await setDoc(doc(db,'names',r.key),{uid:user.uid,name:cleanName(name),ts:Date.now()})}
+    catch(e){const r2=await nameState(name).catch(()=>null);   /* ghi lỗi: có thể vừa bị người khác giữ mất */
+      if(r2&&r2.st==='taken')return'taken';if(!r2||r2.st!=='mine')throw e}}
+  if(myKey&&myKey!==r.key)deleteDoc(doc(db,'names',myKey)).catch(()=>{});   /* tên cũ của chính mình → nhả */
+  myKey=r.key;nameOk=true;return'ok'}
+async function releaseName(key){
+  try{if(key){const s=await getDoc(doc(db,'names',key));if(s.exists()&&s.data().uid===user.uid)await deleteDoc(doc(db,'names',key))}}catch(e){}
+  myKey='';nameOk=false}
+window.cloudNameCheck=async n=>{
+  try{if(!user)await Promise.race([authP,new Promise(r=>setTimeout(r,4000))]);if(!user)return'unknown';
+    const r=await nameState(n);return r.st==='mine'?'free':r.st}catch(e){return'unknown'}};
+function ensureName(){if(nameP)return nameP;const p=runEnsure().finally(()=>{if(nameP===p)nameP=null});return nameP=p}
+async function runEnsure(){
+  if(DEV())return false;if(!user)return false;
+  const loc=locChar();if(!loc||!(loc.tl>=0))return false;
+  if(nameGood(loc))return true;
+  let st;try{st=await claimName(loc.name);err=''}catch(e){err=e.code||'ten';paint();return false}
+  if(st==='ok'){paint();return true}
+  await askRename(loc,st);return false}
+window.cloudEnsureName=()=>{if(user)return ensureName()};
+function askRename(loc,why){return new Promise(()=>{   /* không bao giờ resolve: đổi tên xong là tải lại trang */
+  const o=document.createElement('div');o.id='nmq';
+  o.innerHTML='<div id="nmb" role="dialog" aria-modal="true" aria-label="Đổi tên nhân vật"><div class="h">✏️ Đổi tên nhân vật</div><div class="mu" id="nmm"></div><input id="nmi" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Tên mới"><div class="mu" id="nmx" style="color:#ff8a8a"></div><button class="btn" id="nmo">Xác nhận</button></div>';
+  document.body.append(o);
+  const m=o.querySelector('#nmm'),i=o.querySelector('#nmi'),e=o.querySelector('#nmx'),b=o.querySelector('#nmo');
+  m.textContent=(why==='bad'?'Tên hiện tại của nhân vật không hợp lệ.':'Tên "'+cleanName(loc.name)+'" đã có người khác dùng.')+' Mỗi nhân vật cần một tên riêng. Hãy chọn tên mới, tiến trình của bạn được giữ nguyên.';
+  const go=async()=>{
+    const nn=cleanName(i.value);if(!nn){e.textContent='Hãy nhập tên mới';return}
+    b.disabled=true;e.textContent='Đang kiểm tra...';
+    try{
+      const st=await claimName(nn);
+      if(st==='bad')e.textContent='Tên cần có ít nhất 1 chữ cái hoặc chữ số';
+      else if(st==='taken')e.textContent='Tên này đã có người dùng, hãy chọn tên khác';
+      else{const n2={...(locChar()||loc),name:nn,ts:Date.now()};
+        window.noSave=1;applyLocal(JSON.stringify(n2));last=n2;inRename=1;await flush();last=null;ready=false;reloadNow();return}
+    }catch(x){e.textContent='Lỗi mạng ('+(x.code||'lỗi')+'), thử lại'}
+    b.disabled=false};
+  b.onclick=go;i.onkeydown=ev=>{if(ev.key==='Enter')go()};setTimeout(()=>i.focus(),50)})}
+
 /* --- giao diện: nút + bảng xếp hạng --- */
 const st=document.createElement('style');
-st.textContent='#cl{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:#000b;padding:10px}#cl.on{display:flex}#clb{width:min(440px,100%);max-height:100%;overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}#clb .h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px}#cll{list-style:none;padding:0;display:flex;flex-direction:column;gap:3px;font-size:13px}#cll li{display:grid;grid-template-columns:34px 1fr auto;gap:6px;padding:5px 8px;border-radius:8px;background:#0a1322}#cll li.me{outline:1px solid var(--gd);color:var(--gd)}#cll b{color:var(--gd)}';
+st.textContent='#cl{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:#000b;padding:10px}#cl.on{display:flex}#clb{width:min(440px,100%);max-height:100%;overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}#clb .h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px}#cll{list-style:none;padding:0;display:flex;flex-direction:column;gap:3px;font-size:13px}#cll li{display:grid;grid-template-columns:34px 1fr auto;gap:6px;padding:5px 8px;border-radius:8px;background:#0a1322}#cll li.me{outline:1px solid var(--gd);color:var(--gd)}#cll b{color:var(--gd)}'+'#nmq{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#000d;padding:10px}#nmb{width:min(380px,100%);max-height:100%;overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}#nmb .h{font-weight:800;font-size:16px}#nmi{width:100%;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:8px;color:var(--tx);text-align:center;font-weight:600;font-size:14px;font-family:inherit;outline:0}#nmi:focus-visible{border-color:var(--gd)}#nmx:empty{display:none}';
 document.head.append(st);
 const cl=document.createElement('div');cl.id='cl';
 cl.innerHTML='<div id="clb" role="dialog" aria-label="Xếp hạng"><div class="h"><span>🏆 Bảng xếp hạng</span><button class="btn alt" id="clx" style="padding:4px 12px">✕</button></div><div class="mu" id="cla"></div><button class="btn" id="clg" hidden>Liên kết Google</button><div class="mu" id="clm"></div><ol id="cll"></ol></div>';
@@ -2248,10 +2459,11 @@ import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/13.0.0
 import{getDatabase,ref,set,update,remove,push,get,onValue,onChildAdded,onChildChanged,onChildRemoved,onDisconnect,query,orderByChild,limitToLast,limitToFirst,endAt,runTransaction}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
 const RTDB_URL='';
+const SERVER_URL='';/* URL máy chủ game, ví dụ 'wss://game.ten-ban.com' · để trống = dùng Firebase RTDB như cũ (giới hạn ~100 người) */
 const RESP_MS=30*60*1000;
 
 let app;try{app=getApp()}catch(e){app=initializeApp({apiKey:"AIzaSyDV38H4naMBsdLaanwsmqLOfFiSOed2mWo",authDomain:"my-game1-7ed99.firebaseapp.com",projectId:"my-game1-7ed99",storageBucket:"my-game1-7ed99.firebasestorage.app",messagingSenderId:"679780773541",appId:"1:679780773541:web:9491497d813fc25e95a74c"})}
-const auth=getAuth(app),db=RTDB_URL?getDatabase(app,RTDB_URL):getDatabase(app);
+const auth=getAuth(app),db=SERVER_URL?null:(RTDB_URL?getDatabase(app,RTDB_URL):getDatabase(app));
 const SID=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
 const net={ready:false,connected:false,uid:'',off:0,sid:SID,h:{}};
 window.MMO_NET=net;
@@ -2330,6 +2542,9 @@ net.pstat=d=>{if(cur.pid&&net.connected)set(ref(db,'pstat/'+cur.pid+'/'+net.uid)
 net.partyInvite=(target,pid,name)=>set(ref(db,'invites/'+target+'/'+net.uid),{n:String(name||'?').slice(0,14),p:pid,t:Math.round(net.now())});
 net.inviteDrop=from=>remove(ref(db,'invites/'+net.uid+'/'+from)).catch(()=>{});
 net.partyAccept=async(inv,info)=>{
+  /* rule RTDB không đếm được số thành viên → giới hạn 5 người kiểm ở đây (giống ở phía đội trưởng khi mời) */
+  const cnt=(await get(ref(db,'parties/'+inv.p+'/members'))).numChildren();
+  if(cnt>=5){const e=new Error('permission-denied: party full');e.code='permission-denied';throw e}
   await set(ref(db,'parties/'+inv.p+'/members/'+net.uid),info);
   await set(ref(db,'userParty/'+net.uid),inv.p);
   await remove(ref(db,'invites/'+net.uid+'/'+inv.from)).catch(()=>{})};
@@ -2359,8 +2574,70 @@ function start(){
   net.ready=true;emit('ready');
   if(window.MMO&&window.MMO.attach)window.MMO.attach(net);
 }
+/* ---------- CHẾ ĐỘ MÁY CHỦ GAME (WebSocket): cùng API với lớp Firebase RTDB phía trên, mmo-game không phải đổi ---------- */
+function startWS(u){
+  window.MMO_WS=1;
+  let ws=null,rid=0,tries=0,timer=0,joinMap=null;
+  const pend=new Map(),logs=new Map(),subs=new Map(),perm=()=>{const e=new Error('permission-denied');e.code='permission-denied';return e};
+  const send=o=>{if(ws&&ws.readyState===1){ws.send(JSON.stringify(o));return true}return false};
+  const rpc=o=>new Promise((res,rej)=>{if(!net.connected)return rej(new Error('offline'));const r=++rid;o.rid=r;pend.set(r,{res,rej});send(o);setTimeout(()=>{if(pend.delete(r))rej(new Error('timeout'))},8000)});
+  const sendJoin=()=>{const p=window.SRV&&SRV.me?SRV.me():{};if(joinMap&&p.n)send({t:'join',map:joinMap,x:p.x,y:p.y,name:p.n,c:p.c,l:p.l})};
+  const fan=(ch,k,d)=>{const s=subs.get(ch);if(s)s.forEach(cb=>{try{cb(k,d)}catch(e){}})};
+  const keep=(ch,k,d)=>{let a=logs.get(ch);if(!a)logs.set(ch,a=[]);a.push([k,d]);if(a.length>60)a.shift()};
+  function onMsg(m){
+    switch(m.t){
+      case 'ready':tries=0;net.connected=true;net.off=m.T-Date.now();emit('conn',true);sendJoin();break;
+      case 'joined':window.SRV&&SRV.onJoined(m);break;
+      case 's':window.SRV&&SRV.onSnap(m,(a,b,c)=>emit('p',a,b,c));break;
+      case 'r':{const p=pend.get(m.rid);if(p){pend.delete(m.rid);m.ok?p.res(m.d):p.rej(m.err==='offline'?new Error('offline'):perm())}break}
+      case 'party':emit('party',m.pid,m.v);break;
+      case 'pstat':emit('pstat',m.v);break;
+      case 'invites':emit('invites',m.v);break;
+      case 'chat':keep(m.ch,m.k,m.d);fan(m.ch,m.k,m.d);break;
+      case 'chatlog':logs.set(m.ch,[]);for(const e of m.a){keep(m.ch,e.k,e.d);fan(m.ch,e.k,e.d)}break;
+      case 'fx':emit('fx',m.pid,m.k,m.v);break;
+      case 'bosses':emit('bosses',m.v);break;
+      case 'sys':emit('sys',m.m);break;
+      case 'kicked':net.kicked=true;emit('kicked');break;
+    }
+  }
+  async function connect(){
+    clearTimeout(timer);if(ws&&ws.readyState<2)return;
+    let tok;try{tok=await u.getIdToken()}catch(e){return retry()}
+    const p=window.SRV&&SRV.me?SRV.me():{};
+    const w=ws=new WebSocket(SERVER_URL);
+    w.onopen=()=>send({t:'hello',tok,name:p.n,c:p.c,l:p.l});
+    w.onmessage=e=>{if(ws!==w)return;let m;try{m=JSON.parse(e.data)}catch(_){return}onMsg(m)};
+    w.onclose=()=>{if(ws!==w)return;const was=net.connected;net.connected=false;ws=null;pend.forEach(p=>p.rej(new Error('offline')));pend.clear();if(was){emit('conn',false);window.SRV&&SRV.onDown()}retry()};
+    w.onerror=()=>{};
+  }
+  function retry(){if(net.kicked)return;tries++;clearTimeout(timer);timer=setTimeout(connect,Math.min(15000,1500*Math.pow(1.6,Math.min(tries,8))))}
+  net.send=send;net.ready=true;
+  net.joinMap=(map,d)=>{joinMap=map;if(net.connected)sendJoin();else if(!ws&&!timer)connect()};
+  net.leaveMap=()=>{joinMap=null;send({t:'leave'})};
+  net.pos=d=>{if(!window.SRV||!SRV.on)return;send({t:'pos',seq:SRV.seq,x:d.x,y:d.y,f:d.f,m:d.m,h:d.h,d:d.d,a:d.a,q:d.q,l:d.l,c:d.c,sl:d.sl,wk:d.wk})};
+  net.bossInit=net.bossHit=net.bossReset=()=>Promise.resolve();
+  net.chatListen=(ch,cb)=>{let s=subs.get(ch);if(!s)subs.set(ch,s=new Set());s.add(cb);(logs.get(ch)||[]).forEach(([k,d])=>{try{cb(k,d)}catch(e){}});return()=>s.delete(cb)};
+  net.chatSend=(ch,name,msg)=>{send({t:'chat',ch,m:msg});return Promise.resolve()};
+  net.chatPrune=()=>Promise.resolve();
+  net.fxSend=(pid,to,d)=>{send({t:'fx',to,d})};net.fxWatch=net.fxUnwatch=()=>{};
+  net.partyLoad=()=>rpc({t:'party',op:'load'});
+  net.partyCreate=info=>rpc({t:'party',op:'create'});
+  net.partyWatch=pid=>{};net.partyUnwatch=()=>{};net.pstat=()=>{};
+  net.partyInvite=(target,pid,name)=>rpc({t:'party',op:'invite',to:target});
+  net.inviteDrop=from=>{send({t:'party',op:'drop',from});return Promise.resolve()};
+  net.partyAccept=(inv,info)=>rpc({t:'party',op:'accept',from:inv.from});
+  net.partyLeave=(pid,isLeader,next)=>rpc({t:'party',op:'leave'});
+  net.partyKick=(pid,uid)=>rpc({t:'party',op:'kick',uid});
+  net.partyLead=(pid,uid)=>rpc({t:'party',op:'lead',uid});
+  net.uid=u.uid;
+  setInterval(()=>{if(net.connected)send({t:'ping',c:Date.now()})},20000);
+  net.ready=true;emit('ready');
+  if(window.MMO&&window.MMO.attach)window.MMO.attach(net);
+}
+
 let started=false;
-onAuthStateChanged(auth,u=>{if(!u||started)return;started=true;net.uid=u.uid;start()});
+onAuthStateChanged(auth,u=>{if(!u||started)return;started=true;net.uid=u.uid;SERVER_URL?startWS(u):start()});
 addEventListener('pagehide',()=>{try{net.leaveMap()}catch(e){}});
 
 </script>
