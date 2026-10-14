@@ -917,7 +917,7 @@ function upd(dt){const s=st(),m=MP[G.map],E=TE();if(G.kkT>0)G.kkT-=dt;if(G.kkc>0
  const near=(rg,x)=>{let b=null,bd=rg;for(const q of G.mons)if(q.hp>0&&(!x||AT(q))){const d=M.hypot(q.x-G.x,q.y-G.y);if(d<bd){bd=d;b=q}}return b};
  if(!kb){if(!tg&&G.auto&&!ptr)tg=near(G.au.rg,1);
   if(tg){const d=M.hypot(tg.x-G.x,tg.y-G.y);if(d>s.rg+MT[tg.t].r*.6){if(G.tgt||G.auto){vx=(tg.x-G.x)/d;vy=(tg.y-G.y)/d}}}
-  else if(ptr){const dx=ptr.x-G.x,dy=ptr.y-G.y,d=M.hypot(dx,dy);if(d>8){vx=dx/d;vy=dy/d}}}
+  else if(ptr){const dx=ptr.x-G.x,dy=ptr.y-G.y,d=M.hypot(dx,dy);if(d>8){vx=dx/d;vy=dy/d}}else if(S.flw&&S.party&&S.party.leader!==me()&&!G.dead){const L=S.pst[S.party.leader];if(L&&L.m===G.map){const fdx=(L.x||G.x)-G.x,fdy=(L.y||G.y)-G.y,fd=M.hypot(fdx,fdy);if(fd>130){vx=fdx/fd;vy=fdy/fd}}}}
  if(kb){const d=M.hypot(vx,vy);if(d>1){vx/=d;vy/=d}}
  if(G.fw>0){vx=vy=0}G.mv=vx||vy?1:0;if(G.mv){G.x+=vx*s.sp*(G.sl>0?.6:1)*dt;G.y+=vy*s.sp*(G.sl>0?.6:1)*dt;G.dx=vx;G.dy=vy;if(M.abs(vx)>.3)G.f=vx>0?1:-1}
  G.x=M.max(20,M.min(m.w-20,G.x));G.y=M.max(50,M.min(m.h-12,G.y));
@@ -1773,7 +1773,8 @@ function tickNet(){
   const p=payload(),o=S.sent;
   const ch=!o||Math.abs(p.x-o.x)>=3||Math.abs(p.y-o.y)>=3||p.f!==o.f||p.m!==o.m||Math.abs(p.h-o.h)>=2||p.d!==o.d||p.q!==o.q||p.l!==o.l||p.p!==o.p||p.sl!==o.sl;
   if((ch&&now-S.sentAt>=(SVW()?100:220))||now-S.sentAt>=10000){S.sent=p;S.sentAt=now;S.net.pos(p)}
-  if(S.party&&now-S.psAt>=1500){S.psAt=now;S.net.pstat({m:G.map,x:p.x,y:p.y,h:p.h,l:p.l,c:p.c,n:p.n})}}
+  if(S.party&&now-S.psAt>=1500){S.psAt=now;S.net.pstat({m:G.map,x:p.x,y:p.y,h:p.h,l:p.l,c:p.c,n:p.n})}
+  tickFollow();tickMobHost();tickMobSync();flushMobDmg();}
 function onPresence(type,uid,d){
   if(uid===me())return;
   if(type==='del'||!d||typeof d.x!=='number'||typeof d.y!=='number'||!(d.c>=0&&d.c<=5)){S.pl.delete(uid);return}
@@ -1819,11 +1820,11 @@ function drawAll(L,c,tm,dt){
   if(S.selfBub&&S.selfBub.until>tm)L.push({y:G.y+3,f:()=>bubble(c,G.x,G.y-122,S.selfBub.m)})}
 
 /* ================= TỔ ĐỘI ================= */
-function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d))}
+function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));S.net.mobWatch(pid,v=>{S.pmobs=v});S.net.mobDmgWatch(pid,(k,d)=>{S.pdmgQ=S.pdmgQ||[];S.pdmgQ.push(d)})}
 function dropParty(){
-  S.party=null;S.pst={};S.psAt=0;S.sent=null;
+  S.party=null;S.pst={};S.psAt=0;S.sent=null;S.pmobs={};S.pdmgQ=[];S.mobDmg={};
   if(S.unParty){try{S.unParty()}catch(e){}S.unParty=null}
-  try{S.net.partyUnwatch(false)}catch(e){}}
+  try{S.net.partyUnwatch(false)}catch(e){}try{S.net.mobUnwatch()}catch(e){}try{S.net.mobDmgUnwatch()}catch(e){}}
 function onParty(pid,v){
   if(S.leaving)return;
   if(!v||!v.members||!v.members[me()]){
@@ -1878,6 +1879,52 @@ function calcParty(){
   if(S.party&&!CL[G.cls].aura)for(const r of S.pl.values()){
     if(!r.d&&S.party.members[r.uid]&&CL[r.c]&&CL[r.c].aura&&Math.hypot(r.x-G.x,r.y-G.y)<=AURA_R){au=true;break}}
   S.aura=au}
+function tickFollow(){
+  if(S.flw===undefined){try{S.flw=localStorage.getItem('mmo_flw')==='1'?1:0}catch(e){S.flw=0}}
+  if(!S.flw||!S.party||S.party.leader===me()||G.dead)return;
+  if(!G.auto){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}}
+  const L=S.pst[S.party.leader];
+  if(!L||typeof L.m!=='string'||!MP[L.m]||NOW()-(L.ts||0)>20000)return;
+  if(L.m===G.map)return;
+  const now=Date.now();
+  if(now-(S.flwAt||0)<8000)return;
+  const mp=MP[L.m];
+  if(!G.vc.includes(mp.ct))return;
+  S.flwAt=now;
+  try{SFX.warp()}catch(e){}
+  load(L.m,Math.max(30,Math.min(mp.w-30,L.x||mp.w/2)),Math.max(60,Math.min(mp.h-20,L.y||mp.h/2)));
+  G.pcd=1.2;
+}
+const mobMid=q=>q.t+'_'+Math.round(q.hx)+'_'+Math.round(q.hy);
+function tickMobHost(){
+  if(S.host===undefined){try{S.host=localStorage.getItem('mmo_host')==='1'?1:0}catch(e){S.host=0}}
+  if(!S.host||!S.party||S.party.leader!==me()||Object.keys(S.party.members).length<2||G.dead)return;
+  const now=Date.now();
+  if(S.pdmgQ&&S.pdmgQ.length){
+    for(const e of S.pdmgQ){const mid=e.mid;for(const q of G.mons){if(q.b||q.hp<=0)continue;if(mobMid(q)===mid){q.hp=Math.max(0,q.hp-(e.d||0));break}}}
+    S.pdmgQ=[]}
+  if(now-(S.hostAt||0)<250)return;S.hostAt=now;
+  const o={},ts=Math.round(now);
+  for(const q of G.mons){if(q.b||q.hp<=0)continue;if(Math.hypot(q.x-G.x,q.y-G.y)>520)continue;o[mobMid(q)]={hp:Math.round(q.hp),max:MT[q.t].hp,ts}}
+  S.net.mobWrite(S.party.id,o)}
+function tickMobSync(){
+  if(!S.flw||!S.party||S.party.leader===me()||!S.pmobs||G.dead)return;
+  const now=NOW();
+  for(const q of G.mons){
+    if(q.b)continue;
+    const s=S.pmobs[mobMid(q)];
+    if(!s||now-(s.ts||0)>4000)continue;
+    const hp=s.hp|0;
+    if(hp<=0){if(q.hp>0)q.hp=0}
+    else if(q.hp>hp)q.hp=hp;
+    else if(q.hp<=0&&q.rt>0){q.hp=hp;q.rt=0;q.x=q.hx;q.y=q.hy;q.ag=0}
+  }
+}
+function flushMobDmg(){
+  if(!S.mobDmg||!S.party)return;
+  const now=Date.now();if(now-(S.mobAt||0)<200)return;S.mobAt=now;
+  for(const mid in S.mobDmg){const d=Math.round(S.mobDmg[mid]);if(d>=1)S.net.mobDmg(S.party.id,{mid,d});delete S.mobDmg[mid]}
+}
 function onInvites(v){
   const now=NOW(),a=[];
   for(const from in v){const i=v[from];if(!i||typeof i.p!=='string')continue;
@@ -1981,6 +2028,9 @@ function tabParty(){
     if(!isMe&&s&&MP[s.m]&&s.m!==G.map)b.push(`<button data-a="goto" data-u="${esc(u)}">Tới chỗ đồng đội</button>`);
     if(lead&&!isMe){b.push(`<button data-a="lead" data-u="${esc(u)}">👑 Trao đội trưởng</button>`,`<button class="dg" data-a="kick" data-u="${esc(u)}">Đuổi</button>`)}
     if(b.length)h+=`<div class="a">${b.join('')}</div>`;h+='</div>'}
+  if(!lead)h+=`<div class="a"><button class="${S.flw?'pri':''}" data-a="flw">${S.flw?'✅ Đang theo đội trưởng (tự đi & đánh theo)':'🧭 Theo đội trưởng — tự đi theo & đánh cùng'}</button></div><div class="mu">Bật: tự động dịch chuyển tới map của đội trưởng, đi theo và tự đánh. Yêu cầu bạn đã mở khoá map đó.</div>`;
+  if(lead)h+=`<div class="a"><button class="${S.host?'pri':''}" data-a="host">${S.host?'✅ Đang đồng bộ quái cho đội (làm host)':'🔗 Đồng bộ quái cho đội (làm host)'}</button></div><div class="mu">Bật: máy bạn làm host tính quái, thành viên đồng bộ HP chung & hạ cùng lúc (không cần VPS). Chỉ bật khi có người theo bạn.</div>`;
+  else if(S.pmobs){let fr=0;for(const k in S.pmobs)if(NOW()-(S.pmobs[k].ts||0)<4000){fr=1;break};if(fr)h+='<div class="mu">🔗 Quái đang đồng bộ theo đội trưởng · HP chung, hạ cùng lúc</div>'};
   return h+'<button class="dg" data-a="leave">Rời tổ đội</button>'}
 function tabNear(){
   if(!online())return'<div class="mu">Chưa kết nối máy chủ realtime.</div>';
@@ -2025,6 +2075,8 @@ panel.addEventListener('click',e=>{
   else if(a==='create')doCreate().catch(x=>say(errMsg(x)));
   else if(a==='inv')doInvite(u);else if(a==='acc')doAccept(u);else if(a==='dec')doDecline(u);
   else if(a==='leave')doLeave();else if(a==='kick')doKick(u);else if(a==='lead')doLead(u);else if(a==='goto')goMember(u);
+  else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đã bật theo đội trưởng: tự đi theo & đánh cùng đội trưởng')}else say('Đã tắt theo đội trưởng');S.html='';renderPanel()}
+  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}say(S.host?'Đã bật: bạn làm host đồng bộ quái cho đội':'Đã tắt đồng bộ quái');S.html='';renderPanel()}
   else if(a==='mute'){S.mute.add(u);saveMute();S.html='';renderPanel();say('Đã chặn chat người chơi này')}
   else if(a==='unmute'){S.mute.delete(u);saveMute();S.html='';renderPanel()}});
 ['keydown','keyup','keypress'].forEach(ev=>Q('#mmtx').addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.key==='Enter'){e.preventDefault();sendChat()}}));
@@ -2092,10 +2144,12 @@ function onFx(pid,key,v){
 /* ================= HOOK VÀO GAME ================= */
 let depth=0;const _hit=hit;
 hit=function(q,s,mul,fl,nc,raw){
-  if(depth>0||!q||!q.b||S.noRep||!useShared())return _hit.apply(this,arguments);
+  const isBoss=!!(q&&q.b)&&useShared();
+  let isSMob=false;if(!isBoss&&q&&!q.b&&S.flw&&S.party&&S.party.leader!==me()&&S.pmobs){const mid=mobMid(q);const m=S.pmobs[mid];isSMob=!!m&&NOW()-(m.ts||0)<4000}
+  if(depth>0||!q||S.noRep||(!isBoss&&!isSMob))return _hit.apply(this,arguments);
   const h0=q.hp;depth++;
   try{return _hit.apply(this,arguments)}
-  finally{depth--;const d=h0-(q.hp>0?q.hp:0);if(d>0&&G)addDmg(G.map,d)}};
+  finally{depth--;const d=h0-(q.hp>0?q.hp:0);if(d>0&&G){if(isBoss)addDmg(G.map,d);else if(isSMob){const mid=mobMid(q);S.mobDmg=S.mobDmg||{};S.mobDmg[mid]=(S.mobDmg[mid]||0)+d}}}};
 
 const MMO=window.MMO={
   attach(net){
@@ -2470,7 +2524,7 @@ window.MMO_NET=net;
 const emit=(k,...a)=>{try{net.h[k]&&net.h[k](...a)}catch(e){console.warn('[mmo]',k,e)}};
 net.now=()=>Date.now()+net.off;
 
-const cur={map:null,d:null,unsubs:[],pid:null,unParty:null,unPst:null,unFx:null};
+const cur={map:null,d:null,unsubs:[],pid:null,unParty:null,unPst:null,unFx:null,unMob:null,unDmg:null};
 const pRef=()=>ref(db,'presence/'+cur.map+'/'+net.uid);
 
 /* ---------- presence: người chơi cùng map ---------- */
@@ -2557,6 +2611,13 @@ net.partyLeave=async(pid,isLeader,nextUid)=>{
   net.partyUnwatch(false)};
 net.partyKick=(pid,uid)=>Promise.all([remove(ref(db,'parties/'+pid+'/members/'+uid)),remove(ref(db,'pstat/'+pid+'/'+uid)).catch(()=>{})]);
 net.partyLead=(pid,uid)=>set(ref(db,'parties/'+pid+'/leader'),uid);
+/* ---------- đồng bộ quái theo đội (đội trưởng làm host, không cần VPS) ---------- */
+net.mobWrite=(pid,o)=>{if(pid&&net.connected)set(ref(db,'pmobs/'+pid),o).catch(()=>{})};
+net.mobDmg=(pid,o)=>{if(pid&&net.connected)push(ref(db,'pdmg/'+pid),{...o,u:net.uid,ts:Math.round(net.now())}).catch(()=>{})};
+net.mobWatch=(pid,cb)=>{net.mobUnwatch();cur.unMob=onValue(ref(db,'pmobs/'+pid),s=>cb(s.val()||{}),()=>{})};
+net.mobUnwatch=()=>{try{cur.unMob&&cur.unMob()}catch(e){}cur.unMob=null};
+net.mobDmgWatch=(pid,cb)=>{net.mobDmgUnwatch();cur.unDmg=onValue(ref(db,'pdmg/'+pid),s=>{const v=s.val();if(v)for(const k in v){cb(k,v[k]);remove(ref(db,'pdmg/'+pid+'/'+k)).catch(()=>{})}},()=>{})};
+net.mobDmgUnwatch=()=>{try{cur.unDmg&&cur.unDmg()}catch(e){}cur.unDmg=null};
 
 /* ---------- khởi động ---------- */
 function start(){
@@ -2623,7 +2684,7 @@ function startWS(u){
   net.fxSend=(pid,to,d)=>{send({t:'fx',to,d})};net.fxWatch=net.fxUnwatch=()=>{};
   net.partyLoad=()=>rpc({t:'party',op:'load'});
   net.partyCreate=info=>rpc({t:'party',op:'create'});
-  net.partyWatch=pid=>{};net.partyUnwatch=()=>{};net.pstat=()=>{};
+  net.partyWatch=pid=>{};net.partyUnwatch=()=>{};net.pstat=()=>{};net.mobWrite=()=>{};net.mobDmg=()=>{};net.mobWatch=net.mobUnwatch=net.mobDmgWatch=net.mobDmgUnwatch=()=>{};
   net.partyInvite=(target,pid,name)=>rpc({t:'party',op:'invite',to:target});
   net.inviteDrop=from=>{send({t:'party',op:'drop',from});return Promise.resolve()};
   net.partyAccept=(inv,info)=>rpc({t:'party',op:'accept',from:inv.from});
