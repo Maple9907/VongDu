@@ -917,7 +917,7 @@ function upd(dt){const s=st(),m=MP[G.map],E=TE();if(G.kkT>0)G.kkT-=dt;if(G.kkc>0
  const near=(rg,x)=>{let b=null,bd=rg;for(const q of G.mons)if(q.hp>0&&(!x||AT(q))){const d=M.hypot(q.x-G.x,q.y-G.y);if(d<bd){bd=d;b=q}}return b};
  if(!kb){if(!tg&&G.auto&&!ptr)tg=near(G.au.rg,1);
   if(tg){const d=M.hypot(tg.x-G.x,tg.y-G.y);if(d>s.rg+MT[tg.t].r*.6){if(G.tgt||G.auto){vx=(tg.x-G.x)/d;vy=(tg.y-G.y)/d}}}
-  else if(ptr){const dx=ptr.x-G.x,dy=ptr.y-G.y,d=M.hypot(dx,dy);if(d>8){vx=dx/d;vy=dy/d}}else if(S.flw&&S.party&&S.party.leader!==me()&&!G.dead){const L=S.pst[S.party.leader];if(L&&L.m===G.map){const fdx=(L.x||G.x)-G.x,fdy=(L.y||G.y)-G.y,fd=M.hypot(fdx,fdy);if(fd>130){vx=fdx/fd;vy=fdy/fd}}}}
+  else if(ptr){const dx=ptr.x-G.x,dy=ptr.y-G.y,d=M.hypot(dx,dy);if(d>8){vx=dx/d;vy=dy/d}}else if(window.MMO&&MMO.followDir){const f=MMO.followDir();if(f){vx=f[0];vy=f[1]}}}
  if(kb){const d=M.hypot(vx,vy);if(d>1){vx/=d;vy/=d}}
  if(G.fw>0){vx=vy=0}G.mv=vx||vy?1:0;if(G.mv){G.x+=vx*s.sp*(G.sl>0?.6:1)*dt;G.y+=vy*s.sp*(G.sl>0?.6:1)*dt;G.dx=vx;G.dy=vy;if(M.abs(vx)>.3)G.f=vx>0?1:-1}
  G.x=M.max(20,M.min(m.w-20,G.x));G.y=M.max(50,M.min(m.h-12,G.y));
@@ -2188,6 +2188,11 @@ const MMO=window.MMO={
   isShared:()=>useShared(),
   xpMul:()=>S.xpm,
   aura:()=>S.aura,
+  followDir(){
+    if(!S.flw||!S.party||S.party.leader===me()||!G||G.dead)return null;
+    const L=S.pst[S.party.leader];if(!L||L.m!==G.map)return null;
+    const fdx=(L.x||G.x)-G.x,fdy=(L.y||G.y)-G.y,fd=Math.hypot(fdx,fdy);
+    return fd>130?[fdx/fd,fdy/fd]:null},
   allies,party:partyIds,send:sendFx,allyLow};
 
 setInterval(tickNet,110);
