@@ -1904,7 +1904,7 @@ function spotPt(){
   if(L&&typeof L.m==='string'&&MP[L.m]&&L.m===G.map&&NOW()-(L.ts||0)<20000)return [+L.x||0,+L.y||0];
   return null}
 function tickFollow(){
-  if(S.flw===undefined){try{const v=localStorage.getItem('mmo_flw');S.flw=v==null?1:(v==='1'?1:0)}catch(e){S.flw=1}}
+  if(S.flw===undefined){try{S.flw=localStorage.getItem('mmo_flw')==='1'?1:0}catch(e){S.flw=0}}
   if(!S.flw||!S.party||S.party.leader===me()||G.dead)return;
   if(!G.auto){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}}
   const sp=spotPt();
@@ -1935,7 +1935,7 @@ function tickSpot(){
   if(now-(S.spotAt||0)<1200)return;S.spotAt=now;
   try{S.net.spotWrite(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),ts:M.round(NOW())})}catch(e){}}
 function tickMobHost(){
-  if(S.host===undefined){try{const v=localStorage.getItem('mmo_host');S.host=v==null?1:(v==='1'?1:0)}catch(e){S.host=1}}
+  if(S.host===undefined){try{S.host=localStorage.getItem('mmo_host')==='1'?1:0}catch(e){S.host=0}}
   if(!S.host||!S.party||S.party.leader!==me()||Object.keys(S.party.members).length<2||G.dead)return;
   const now=Date.now();
   if(S.pdmgQ&&S.pdmgQ.length){
@@ -2098,12 +2098,12 @@ function tabParty(){
     if(lead&&!isMe){b.push(`<button data-a="lead" data-u="${esc(u)}">👑 Trao đội trưởng</button>`,`<button class="dg" data-a="kick" data-u="${esc(u)}">Đuổi</button>`)}
     if(b.length)h+=`<div class="a">${b.join('')}</div>`;h+='</div>'}
   if(!lead){
-  h+=`<div class="a"><button class="${S.flw?'dg':'pri'}" data-a="flw">${S.flw?'⛔ Bỏ theo đội trưởng (tự đánh riêng)':'🧭 Đi theo đội trưởng'}</button></div><div class="mu">Đang theo: tự dịch chuyển tới chỗ đội trưởng và tự đánh đúng mấy con đội trưởng đang đánh — cài tự đánh của bạn (tầm, bình, kỹ năng) giữ nguyên. Yêu cầu bạn đã mở khoá map đó.</div>`;
+  h+=`<div class="a"><button class="${S.flw?'pri':''}" data-a="flw">${S.flw?'✅ Đang theo đội trưởng':'🧭 Theo đội trưởng'}</button></div><div class="mu">Bật: tự dịch chuyển tới bãi quái của đội trưởng và tự đánh quái ở đó — giữ nguyên cài tự đánh của bạn (tầm, bình, kỹ năng). Yêu cầu bạn đã mở khoá map đó.</div>`;
   const sp=spotPt();
   if(sp)h+=`<div class="mu">📍 Bãi của đội trưởng cách bạn <b style="color:var(--jd)">${M.round(M.hypot(G.x-sp[0],G.y-sp[1]))}</b> px${S.flw?'':' · bật “Theo đội trưởng” để vào chung'}</div>`}
-  if(lead)h+=`<div class="a"><button class="${S.host?'dg':'pri'}" data-a="host">${S.host?'⛔ Ngừng làm host (tự đánh riêng)':'📍 Máy này làm host cho cả đội'}</button></div><div class="mu">Đang làm host: <b>máy bạn là máy chủ quái cho cả đội</b> — thành viên cùng map đánh đúng con bạn đang đánh, máu quái dùng chung, ai đứng gần chỗ hạ cũng nhận EXP. Không cần bấm gì thêm.</div>`;
+  if(lead)h+=`<div class="a"><button class="${S.host?'pri':''}" data-a="host">${S.host?'✅ Đang mở bãi cho cả đội':'📍 Mở bãi quái cho cả đội'}</button></div><div class="mu">Bật: bãi quái bạn đang đứng là điểm hẹn cho cả đội — thành viên bật “Theo đội trưởng” sẽ kéo tới đánh chung, máu quái dùng chung, và <b>mọi người đứng gần đều nhận EXP</b> của con quái bị hạ. Tắt: mỗi người đánh quái riêng.</div>`;
   else{
-  if(S.spot&&S.spot.m===G.map&&NOW()-(S.spot.ts||0)<15000)h+='<div class="mu">📍 Máy đội trưởng đang làm host — quái bạn đánh là quái của cả đội</div>';
+  if(S.spot&&S.spot.m===G.map&&NOW()-(S.spot.ts||0)<15000)h+='<div class="mu">📍 Đội trưởng đang mở bãi quái — cả đội dồn tới đây</div>';
   let fr=0;for(const k in S.pmobs||{})if(NOW()-(S.pmobs[k].ts||0)<4000){fr=1;break}
   const L=S.pst[S.party&&S.party.leader];
   if(fr&&L&&L.m===G.map)h+='<div class="mu">⚔️ Đang đồng bộ quái theo đội — máu dùng chung</div>'}
@@ -2152,8 +2152,8 @@ panel.addEventListener('click',e=>{
   else if(a==='create')doCreate().catch(x=>say(errMsg(x)));
   else if(a==='inv')doInvite(u);else if(a==='acc')doAccept(u);else if(a==='dec')doDecline(u);
   else if(a==='leave')doLeave();else if(a==='kick')doKick(u);else if(a==='lead')doLead(u);else if(a==='goto')goMember(u);
-  else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đang đi theo đội trưởng — tự đánh quái của cả đội')}else say('Đã bỏ theo đội trưởng — tự đánh riêng');S.html='';renderPanel()}
-  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}S.spotAt=0;if(!S.host){S.spotOn=0;try{S.party&&S.net.spotClear&&S.net.spotClear(S.party.id)}catch(e){}}say(S.host?'📍 Máy bạn làm host quái cho cả đội':'Đã ngừng làm host — bạn tự đánh riêng');S.html='';renderPanel()}
+  else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đã bật theo đội trưởng')}else say('Đã tắt theo đội trưởng');S.html='';renderPanel()}
+  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}S.spotAt=0;if(!S.host){S.spotOn=0;try{S.party&&S.net.spotClear&&S.net.spotClear(S.party.id)}catch(e){}}say(S.host?'📍 Đã mở bãi quái · đồng đội kéo tới đây':'Đã tắt đồng bộ quái');S.html='';renderPanel()}
   else if(a==='mute'){S.mute.add(u);saveMute();S.html='';renderPanel();say('Đã chặn chat người chơi này')}
   else if(a==='unmute'){S.mute.delete(u);saveMute();S.html='';renderPanel()}});
 ['keydown','keyup','keypress'].forEach(ev=>Q('#mmtx').addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.key==='Enter'){e.preventDefault();sendChat()}}));
