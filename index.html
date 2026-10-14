@@ -914,8 +914,8 @@ function upd(dt){const s=st(),m=MP[G.map],E=TE();if(G.kkT>0)G.kkT-=dt;if(G.kkc>0
  if(G.dead){G.dead-=dt;if(G.dead<=0){G.dead=0;G.hp=s.mhp;G.mp=s.mmp;G.sh=0;G.bf=null;G.inv=0;G.ps=G.sl=0;{const r=CM[MP[G.map].ct].rs;load(r[0],r[1],r[2])}}if((G.ht-=dt)<=0){G.ht=.1;hud(s)}return}
  let vx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+jx,vy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+jy,kb=vx||vy,tg=null;
  if(G.tgt&&G.tgt.hp<=0)G.tgt=null;tg=G.tgt;
- const near=(rg,x)=>{let b=null,bd=rg;for(const q of G.mons)if(q.hp>0&&(!x||AT(q))){const d=M.hypot(q.x-G.x,q.y-G.y);if(d<bd){bd=d;b=q}}return b};
- if(!kb){if(!tg&&G.auto&&!ptr)tg=near(G.au.rg,1);
+ const near=(rg,x,o)=>{let b=null,bd=rg,ox=o?o[0]:G.x,oy=o?o[1]:G.y;for(const q of G.mons)if(q.hp>0&&(!x||AT(q))){const d=M.hypot(q.x-ox,q.y-oy);if(d<bd){bd=d;b=q}}return b};
+ if(!kb){if(!tg&&G.auto&&!ptr)tg=near(G.au.rg,1,window.MMO&&MMO.focusPt?MMO.focusPt():null);
   if(tg){const d=M.hypot(tg.x-G.x,tg.y-G.y);if(d>s.rg+MT[tg.t].r*.6){if(G.tgt||G.auto){vx=(tg.x-G.x)/d;vy=(tg.y-G.y)/d}}}
   else if(ptr){const dx=ptr.x-G.x,dy=ptr.y-G.y,d=M.hypot(dx,dy);if(d>8){vx=dx/d;vy=dy/d}}else if(window.MMO&&MMO.followDir){const f=MMO.followDir();if(f){vx=f[0];vy=f[1]}}}
  if(kb){const d=M.hypot(vx,vy);if(d>1){vx/=d;vy/=d}}
@@ -1687,13 +1687,14 @@ requestAnimationFrame(loop);
    · Chat Thế giới / Tổ đội, bong bóng chat, chặn người chơi, 1 tài khoản = 1 phiên
    Quái thường vẫn chạy riêng trên máy từng người; chỉ người chơi, boss, tổ đội và chat được đồng bộ. */
 (function(){
-const Q=s=>document.querySelector(s),RESP=30*60*1000,PMAX=5,AURA_R=162,
+const Q=s=>document.querySelector(s),RESP=30*60*1000,PMAX=5,AURA_R=162,SHARE_R=680,   /* bán kính nhận EXP chung (px) */
  esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
  T=()=>t,
  S={net:null,pl:new Map(),bs:{},bossLoaded:false,bossErr:false,boot:Date.now(),lb:{},pend:{},busy:{},myDmg:{},tryAt:{},
   party:null,pst:{},invites:[],log:[],keys:new Set(),mute:new Set(),mhp:100,mhpAt:0,aura:false,xpm:1,xpn:1,map:null,
   sent:null,sentAt:0,psAt:0,aSeq:0,aName:'',lastAn:null,kicked:false,tab:'p',open:false,tpAt:0,lastSay:0,selfBub:null,
-  warned:0,html:'',unParty:null,unWorld:null,leaving:0,noRep:0,remoteFin:0,partyLoaded:false};
+  warned:0,html:'',unParty:null,unWorld:null,leaving:0,noRep:0,remoteFin:0,partyLoaded:false,
+  spot:null,spotAt:0,spotOn:0,kseen:new Set(),killN:0};
 try{JSON.parse(localStorage.getItem('mmo_mute')||'[]').forEach(u=>S.mute.add(u))}catch(e){}
 const saveMute=()=>{try{localStorage.setItem('mmo_mute',JSON.stringify([...S.mute].slice(-200)))}catch(e){}},
  me=()=>S.net&&S.net.uid||'',
@@ -1777,7 +1778,7 @@ function tickNet(){
   const ch=!o||Math.abs(p.x-o.x)>=3||Math.abs(p.y-o.y)>=3||p.f!==o.f||p.m!==o.m||Math.abs(p.h-o.h)>=2||p.d!==o.d||p.q!==o.q||p.l!==o.l||p.p!==o.p||p.sl!==o.sl;
   if((ch&&now-S.sentAt>=(SVW()?100:220))||now-S.sentAt>=10000){S.sent=p;S.sentAt=now;S.net.pos(p)}
   if(S.party&&now-S.psAt>=1500){S.psAt=now;S.net.pstat({m:G.map,x:p.x,y:p.y,h:p.h,l:p.l,c:p.c,n:p.n})}
-  tickFollow();tickMobHost();tickMobSync();flushMobDmg();}
+  tickFollow();tickSpot();tickMobHost();tickMobSync();flushMobDmg();}
 function onPresence(type,uid,d){
   if(uid===me())return;
   if(type==='del'||!d||typeof d.x!=='number'||typeof d.y!=='number'||!(d.c>=0&&d.c<=5)){S.pl.delete(uid);return}
@@ -1823,11 +1824,11 @@ function drawAll(L,c,tm,dt){
   if(S.selfBub&&S.selfBub.until>tm)L.push({y:G.y+3,f:()=>bubble(c,G.x,G.y-122,S.selfBub.m)})}
 
 /* ================= TỔ ĐỘI ================= */
-function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));S.net.mobWatch(pid,v=>{S.pmobs=v});S.net.mobDmgWatch(pid,(k,d)=>{if(S.party&&S.party.leader===me()){S.pdmgQ=S.pdmgQ||[];S.pdmgQ.push(d)}})}
+function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));S.net.mobWatch(pid,v=>{S.pmobs=v});S.net.mobDmgWatch(pid,(k,d)=>{if(S.party&&S.party.leader===me()){S.pdmgQ=S.pdmgQ||[];S.pdmgQ.push(d)}});try{S.net.spotWatch(pid,v=>{S.spot=v||null})}catch(e){}try{S.net.killWatch(pid,onPartyKill)}catch(e){}}
 function dropParty(){
-  S.party=null;S.pst={};S.psAt=0;S.sent=null;S.pmobs={};S.pdmgQ=[];S.mobDmg={};
+  S.party=null;S.pst={};S.psAt=0;S.sent=null;S.pmobs={};S.pdmgQ=[];S.mobDmg={};S.spot=null;S.spotOn=0;S.spotAt=0;S.kseen.clear();
   if(S.unParty){try{S.unParty()}catch(e){}S.unParty=null}
-  try{S.net.partyUnwatch(false)}catch(e){}try{S.net.mobUnwatch()}catch(e){}try{S.net.mobDmgUnwatch()}catch(e){}}
+  try{S.net.partyUnwatch(false)}catch(e){}try{S.net.mobUnwatch()}catch(e){}try{S.net.mobDmgUnwatch()}catch(e){}try{S.net.spotUnwatch()}catch(e){}try{S.net.killUnwatch()}catch(e){}}
 function onParty(pid,v){
   if(S.leaving)return;
   if(!v||!v.members||!v.members[me()]){
@@ -1894,10 +1895,20 @@ function calcParty(){
   if(S.party&&!CL[G.cls].aura)for(const r of S.pl.values()){
     if(!r.d&&S.party.members[r.uid]&&CL[r.c]&&CL[r.c].aura&&Math.hypot(r.x-G.x,r.y-G.y)<=AURA_R){au=true;break}}
   S.aura=au}
+/* bãi quái cả đội: ưu tiên pspot (đội trưởng chọn), không có thì lấy vị trí đội trưởng trong pstat */
+function spotPt(){
+  if(!G||!S.party||S.party.leader===me())return null;
+  const v=S.spot;
+  if(v&&typeof v.m==='string'&&MP[v.m]&&v.m===G.map&&NOW()-(v.ts||0)<15000)return [+v.x||0,+v.y||0];
+  const L=(S.pst||{})[S.party.leader];
+  if(L&&typeof L.m==='string'&&MP[L.m]&&L.m===G.map&&NOW()-(L.ts||0)<20000)return [+L.x||0,+L.y||0];
+  return null}
 function tickFollow(){
-  if(S.flw===undefined){try{S.flw=localStorage.getItem('mmo_flw')==='1'?1:0}catch(e){S.flw=0}}
+  if(S.flw===undefined){try{const v=localStorage.getItem('mmo_flw');S.flw=v==null?1:(v==='1'?1:0)}catch(e){S.flw=1}}
   if(!S.flw||!S.party||S.party.leader===me()||G.dead)return;
   if(!G.auto){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}}
+  const sp=spotPt();
+  if(sp&&M.hypot(G.x-sp[0],G.y-sp[1])>420&&G.tgt)G.tgt=null;   /* đang đi tới bãi thì bỏ mục tiêu cũ, khỏi đứng yên chỗ này */
   const L=S.pst[S.party.leader];
   if(!L||typeof L.m!=='string'||!MP[L.m]||NOW()-(L.ts||0)>20000)return;
   if(L.m===G.map)return;
@@ -1911,16 +1922,32 @@ function tickFollow(){
   G.pcd=1.2;
 }
 const mobMid=q=>q.mid||(q.t+'_'+Math.round(q.hx)+'_'+Math.round(q.hy));
+/* đội trưởng CHỌN BÃI QUÁI: phát vị trí mình đang đứng, cả đội dồn tới đánh chung.
+   Bật/tắt cùng nút "đồng bộ quái"; tắt (hoặc rời đội) thì xoá pspot cho sạch. */
+function tickSpot(){
+  if(!S.party||S.party.leader!==me()||!S.net||!S.net.ready||!G)return;
+  const solo=Object.keys(S.party.members||{}).length<2;
+  if(!S.host||G.dead||solo){
+    if(S.spotOn){S.spotOn=0;try{S.net.spotClear(S.party.id)}catch(e){}}
+    return}
+  S.spotOn=1;
+  const now=Date.now();
+  if(now-(S.spotAt||0)<1200)return;S.spotAt=now;
+  try{S.net.spotWrite(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),ts:M.round(NOW())})}catch(e){}}
 function tickMobHost(){
-  if(S.host===undefined){try{S.host=localStorage.getItem('mmo_host')==='1'?1:0}catch(e){S.host=0}}
+  if(S.host===undefined){try{const v=localStorage.getItem('mmo_host');S.host=v==null?1:(v==='1'?1:0)}catch(e){S.host=1}}
   if(!S.host||!S.party||S.party.leader!==me()||Object.keys(S.party.members).length<2||G.dead)return;
   const now=Date.now();
   if(S.pdmgQ&&S.pdmgQ.length){
     for(const e of S.pdmgQ){const mid=e.mid;for(const q of G.mons){if(q.b||q.mn||q.hp<=0)continue;if(mobMid(q)===mid){q.hp=Math.max(0,q.hp-(e.d||0));break}}}
     S.pdmgQ=[]}
   if(now-(S.hostAt||0)<250)return;S.hostAt=now;
-  const o={},ts=Math.round(now);
-  for(const q of G.mons){if(q.b||q.mn)continue;if(Math.hypot(q.x-G.x,q.y-G.y)>520)continue;o[mobMid(q)]={hp:Math.max(0,Math.round(q.hp)),max:MT[q.t].hp,ts}}
+  /* quái sống đưa vào trước (gần trước), quái chết sau — quái chết vẫn phải phát để thành viên
+     thấy hp=0 và hạ cùng lúc. Giới hạn 24 node cho nhẹ. */
+  const o={},ts=Math.round(now),a=[];
+  for(const q of G.mons){if(q.b||q.mn)continue;if(Math.hypot(q.x-G.x,q.y-G.y)>1200)continue;a.push([q,q.hp<=0])}
+  a.sort((u,w)=>(u[1]-w[1])||(M.hypot(u[0].x-G.x,u[0].y-G.y)-M.hypot(w[0].x-G.x,w[0].y-G.y)));
+  for(let i=0;i<a.length&&i<24;i++){const q=a[i][0];o[mobMid(q)]={hp:Math.max(0,Math.round(q.hp)),max:MT[q.t].hp,ts}}
   S.net.mobWrite(S.party.id,o)}
 function tickMobSync(){
   if(!S.party||S.party.leader===me()||!S.pmobs||G.dead)return;
@@ -1941,6 +1968,32 @@ function flushMobDmg(){
   const now=Date.now();if(now-(S.mobAt||0)<200)return;S.mobAt=now;
   for(const mid in S.mobDmg){const d=Math.round(S.mobDmg[mid]);if(d>=1)S.net.mobDmg(S.party.id,{mid,d});delete S.mobDmg[mid]}
 }
+/* ---------- CHIA EXP CHO CẢ ĐỘI ----------
+   Ai hạ cũng được chia: hạ xong đẩy 1 sự kiện lên đội, mọi thành viên khác cùng map +
+   đứng gần chỗ hạ (<SHARE_R) đều nhận đúng số EXP đó, kể cả đang đứng yên (không cần bật tự đánh). */
+function shareKill(q,gain){
+  if(!q||!G||G.dead||!S.party||!S.net||!S.net.ready||S.leaving)return;
+  if(Object.keys(S.party.members||{}).length<2)return;
+  const e=M.round(gain);if(!(e>0))return;
+  const now=Date.now();
+  if(q.shAt&&now-q.shAt<3000)return;      /* 1 con chỉ chia 1 lần (SRV-5 có thể gọi lại hit) */
+  q.shAt=now;
+  try{S.net.killPush(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),e,ts:M.round(NOW())})}catch(e){}
+  S.killN=(S.killN||0)+1}
+function onPartyKill(pid,key,v){
+  if(!v||!G||G.dead||scr!==3||S.leaving||!S.party||S.party.id!==pid)return;
+  if(S.kseen.has(key))return;S.kseen.add(key);if(S.kseen.size>200)S.kseen=new Set([...S.kseen].slice(-100));
+  const u=v.u;
+  if(!u||u===me()||!S.party.members||!S.party.members[u])return;
+  if(v.m!==G.map||NOW()-(v.ts||0)>10000)return;
+  const x=+v.x||0,y=+v.y||0,e=M.min(100000,M.max(0,M.round(+v.e||0)));
+  if(!(e>0)||M.hypot(G.x-x,G.y-y)>SHARE_R)return;
+  const lv0=G.lv;
+  G.xp+=e;
+  while(G.xp>=need(G.lv)){G.xp-=need(G.lv);G.lv++;G.hp=st().mhp;G.mp=st().mmp;fx.push({k:'r',x:G.x,y:G.y,t:0});ft(G.x,G.y-80,'LÊN CẤP '+G.lv+'!','#ffd43b',1.5);try{SFX.levelup()}catch(e){}const hh=Q('#hn');if(hh)hh.textContent=G.name+' · Lv '+G.lv}
+  ft(G.x,G.y-50,'+'+e+' EXP · '+(S.party.members[u].n||'đồng đội'),'#9af0cf',.9);
+  if(G.lv>lv0)try{say('+'+ppl(G.tl)+' điểm thuộc tính · chạm avatar để cộng')}catch(e){}
+  S.killN=(S.killN||0)+1}
 function onInvites(v){
   const now=NOW(),a=[];
   for(const from in v){const i=v[from];if(!i||typeof i.p!=='string')continue;
@@ -2044,9 +2097,17 @@ function tabParty(){
     if(!isMe&&s&&MP[s.m]&&s.m!==G.map)b.push(`<button data-a="goto" data-u="${esc(u)}">Tới chỗ đồng đội</button>`);
     if(lead&&!isMe){b.push(`<button data-a="lead" data-u="${esc(u)}">👑 Trao đội trưởng</button>`,`<button class="dg" data-a="kick" data-u="${esc(u)}">Đuổi</button>`)}
     if(b.length)h+=`<div class="a">${b.join('')}</div>`;h+='</div>'}
-  if(!lead)h+=`<div class="a"><button class="${S.flw?'pri':''}" data-a="flw">${S.flw?'✅ Đang theo đội trưởng':'🧭 Theo đội trưởng (tự di chuyển & tự đánh)'}</button></div><div class="mu">Bật: tự động dịch chuyển theo đội trưởng và tự đánh. Yêu cầu bạn đã mở khoá map đó.</div>`;
-  if(lead)h+=`<div class="a"><button class="${S.host?'pri':''}" data-a="host">${S.host?'✅ Đang đồng bộ quái cùng đội':'⚔️ Đồng bộ quái cùng đội'}</button></div><div class="mu">Bật: cả đội cùng tấn công một con quái, máu quái dùng chung và hạ cùng lúc. Tắt: mỗi người đánh quái riêng.</div>`;
-  else if(S.pmobs){let fr=0;for(const k in S.pmobs)if(NOW()-(S.pmobs[k].ts||0)<4000){fr=1;break};const L=S.pst[S.party&&S.party.leader];if(fr&&L&&L.m===G.map)h+='<div class="mu">⚔️ Đang đồng bộ quái theo đội — máu dùng chung</div>'};
+  if(!lead){
+  h+=`<div class="a"><button class="${S.flw?'dg':'pri'}" data-a="flw">${S.flw?'⛔ Bỏ theo đội trưởng (tự đánh riêng)':'🧭 Đi theo đội trưởng'}</button></div><div class="mu">Đang theo: tự dịch chuyển tới chỗ đội trưởng và tự đánh đúng mấy con đội trưởng đang đánh — cài tự đánh của bạn (tầm, bình, kỹ năng) giữ nguyên. Yêu cầu bạn đã mở khoá map đó.</div>`;
+  const sp=spotPt();
+  if(sp)h+=`<div class="mu">📍 Bãi của đội trưởng cách bạn <b style="color:var(--jd)">${M.round(M.hypot(G.x-sp[0],G.y-sp[1]))}</b> px${S.flw?'':' · bật “Theo đội trưởng” để vào chung'}</div>`}
+  if(lead)h+=`<div class="a"><button class="${S.host?'dg':'pri'}" data-a="host">${S.host?'⛔ Ngừng làm host (tự đánh riêng)':'📍 Máy này làm host cho cả đội'}</button></div><div class="mu">Đang làm host: <b>máy bạn là máy chủ quái cho cả đội</b> — thành viên cùng map đánh đúng con bạn đang đánh, máu quái dùng chung, ai đứng gần chỗ hạ cũng nhận EXP. Không cần bấm gì thêm.</div>`;
+  else{
+  if(S.spot&&S.spot.m===G.map&&NOW()-(S.spot.ts||0)<15000)h+='<div class="mu">📍 Máy đội trưởng đang làm host — quái bạn đánh là quái của cả đội</div>';
+  let fr=0;for(const k in S.pmobs||{})if(NOW()-(S.pmobs[k].ts||0)<4000){fr=1;break}
+  const L=S.pst[S.party&&S.party.leader];
+  if(fr&&L&&L.m===G.map)h+='<div class="mu">⚔️ Đang đồng bộ quái theo đội — máu dùng chung</div>'}
+  h+='<div class="mu">💡 Chia EXP: ai hạ cũng được chia cho cả đội — bạn cùng map và đứng gần chỗ hạ là nhận, không cần bật tự đánh.</div>';
   return h+'<button class="dg" data-a="leave">Rời tổ đội</button>'}
 function tabNear(){
   if(!online())return'<div class="mu">Chưa kết nối máy chủ realtime.</div>';
@@ -2091,8 +2152,8 @@ panel.addEventListener('click',e=>{
   else if(a==='create')doCreate().catch(x=>say(errMsg(x)));
   else if(a==='inv')doInvite(u);else if(a==='acc')doAccept(u);else if(a==='dec')doDecline(u);
   else if(a==='leave')doLeave();else if(a==='kick')doKick(u);else if(a==='lead')doLead(u);else if(a==='goto')goMember(u);
-  else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đã bật theo đội trưởng')}else say('Đã tắt theo đội trưởng');S.html='';renderPanel()}
-  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}say(S.host?'Đã bật đồng bộ quái cùng đội':'Đã tắt đồng bộ quái');S.html='';renderPanel()}
+  else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đang đi theo đội trưởng — tự đánh quái của cả đội')}else say('Đã bỏ theo đội trưởng — tự đánh riêng');S.html='';renderPanel()}
+  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}S.spotAt=0;if(!S.host){S.spotOn=0;try{S.party&&S.net.spotClear&&S.net.spotClear(S.party.id)}catch(e){}}say(S.host?'📍 Máy bạn làm host quái cho cả đội':'Đã ngừng làm host — bạn tự đánh riêng');S.html='';renderPanel()}
   else if(a==='mute'){S.mute.add(u);saveMute();S.html='';renderPanel();say('Đã chặn chat người chơi này')}
   else if(a==='unmute'){S.mute.delete(u);saveMute();S.html='';renderPanel()}});
 ['keydown','keyup','keypress'].forEach(ev=>Q('#mmtx').addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.key==='Enter'){e.preventDefault();sendChat()}}));
@@ -2160,12 +2221,16 @@ function onFx(pid,key,v){
 /* ================= HOOK VÀO GAME ================= */
 let depth=0;const _hit=hit;
 hit=function(q,s,mul,fl,nc,raw){
+  /* quái thường (không boss / không phụ) ai cũng hạ được → luôn cần đẩy EXP chia cả đội */
+  const share=!depth&&!S.noRep&&!!q&&!q.b&&!q.mn&&!!G&&!G.dead&&!!S.party;
   const isBoss=!!(q&&q.b)&&useShared();
   let isSMob=false;if(!isBoss&&q&&!q.b&&!q.mn&&S.party&&S.party.leader!==me()&&S.pmobs){const L=S.pst[S.party.leader];if(L&&L.m===G.map&&NOW()-(L.ts||0)<20000){const mid=mobMid(q);const m=S.pmobs[mid];isSMob=!!m&&NOW()-(m.ts||0)<4000}}
-  if(depth>0||!q||S.noRep||(!isBoss&&!isSMob))return _hit.apply(this,arguments);
-  const h0=q.hp;depth++;
+  if(!share&&(depth>0||!q||S.noRep||(!isBoss&&!isSMob)))return _hit.apply(this,arguments);
+  const h0=q.hp,x0=G?G.xp:0;depth++;
   try{return _hit.apply(this,arguments)}
-  finally{depth--;const d=h0-(q.hp>0?q.hp:0);if(d>0&&G){if(isBoss)addDmg(G.map,d);else if(isSMob){const mid=mobMid(q);S.mobDmg=S.mobDmg||{};S.mobDmg[mid]=(S.mobDmg[mid]||0)+d}}}};
+  finally{depth--;const d=h0-(q.hp>0?q.hp:0);
+   if(d>0&&G){if(isBoss)addDmg(G.map,d);else if(isSMob){const mid=mobMid(q);S.mobDmg=S.mobDmg||{};S.mobDmg[mid]=(S.mobDmg[mid]||0)+d}}
+   if(share&&h0>0&&q.hp<=0)shareKill(q,G.xp-x0)}};
 
 const MMO=window.MMO={
   attach(net){
@@ -2204,10 +2269,13 @@ const MMO=window.MMO={
   isShared:()=>useShared(),
   xpMul:()=>S.xpm,
   aura:()=>S.aura,
+  focusPt(){
+    if(!S.flw||!S.party||S.party.leader===me()||!G||G.dead)return null;
+    return spotPt()},
   followDir(){
     if(!S.flw||!S.party||S.party.leader===me()||!G||G.dead)return null;
-    const L=S.pst[S.party.leader];if(!L||L.m!==G.map)return null;
-    const fdx=(L.x||G.x)-G.x,fdy=(L.y||G.y)-G.y,fd=Math.hypot(fdx,fdy);
+    const p=spotPt();if(!p)return null;
+    const fdx=p[0]-G.x,fdy=p[1]-G.y,fd=M.hypot(fdx,fdy);
     return fd>130?[fdx/fd,fdy/fd]:null},
   allies,party:partyIds,send:sendFx,allyLow};
 
@@ -2631,6 +2699,8 @@ net.partyAccept=async(inv,info)=>{
   }catch(e){try{e.step=step}catch(_){}throw e}};
 net.partyLeave=async(pid,isLeader,nextUid)=>{
   await remove(ref(db,'pstat/'+pid+'/'+net.uid)).catch(()=>{});
+  await remove(ref(db,'pkill/'+pid)).catch(()=>{});
+  if(isLeader)await remove(ref(db,'pspot/'+pid)).catch(()=>{});
   if(isLeader&&!nextUid){await remove(ref(db,'chat/party/'+pid)).catch(()=>{});await remove(ref(db,'parties/'+pid))}
   else{
     if(isLeader)await set(ref(db,'parties/'+pid+'/leader'),nextUid);
@@ -2645,6 +2715,14 @@ net.mobWatch=(pid,cb)=>{net.mobUnwatch();cur.unMob=onValue(ref(db,'pmobs/'+pid),
 net.mobUnwatch=()=>{try{cur.unMob&&cur.unMob()}catch(e){}cur.unMob=null};
 net.mobDmgWatch=(pid,cb)=>{net.mobDmgUnwatch();cur.unDmg=onValue(ref(db,'pdmg/'+pid),s=>{const v=s.val();if(v)for(const k in v){cb(k,v[k]);remove(ref(db,'pdmg/'+pid+'/'+k)).catch(()=>{})}},()=>{})};
 net.mobDmgUnwatch=()=>{try{cur.unDmg&&cur.unDmg()}catch(e){}cur.unDmg=null};
+/* ---------- bãi quái cả đội (pspot: đội trưởng ghi) + sự kiện hạ quái (pkill: mọi thành viên ghi) ---------- */
+net.spotWrite=(pid,d)=>{if(pid&&net.connected)set(ref(db,'pspot/'+pid),d).catch(()=>{})};
+net.spotClear=pid=>{if(pid)remove(ref(db,'pspot/'+pid)).catch(()=>{})};
+net.spotWatch=(pid,cb)=>{net.spotUnwatch();cur.unSpot=onValue(ref(db,'pspot/'+pid),s=>cb(s.val()||null),()=>{})};
+net.spotUnwatch=()=>{try{cur.unSpot&&cur.unSpot()}catch(e){}cur.unSpot=null};
+net.killPush=(pid,d)=>{if(pid&&net.connected)push(ref(db,'pkill/'+pid),{...d,u:net.uid,ts:Math.round(net.now())}).catch(()=>{})};
+net.killWatch=(pid,cb)=>{net.killUnwatch();cur.unKill=onValue(query(ref(db,'pkill/'+pid),orderByChild('ts'),limitToLast(12)),s=>{const v=s.val();if(v)for(const k in v){cb(k,v[k]);remove(ref(db,'pkill/'+pid+'/'+k)).catch(()=>{})}},()=>{})};
+net.killUnwatch=()=>{try{cur.unKill&&cur.unKill()}catch(e){}cur.unKill=null};
 
 /* ---------- khởi động ---------- */
 function start(){
@@ -2712,6 +2790,7 @@ function startWS(u){
   net.partyLoad=()=>rpc({t:'party',op:'load'});
   net.partyCreate=info=>rpc({t:'party',op:'create'});
   net.partyWatch=pid=>{};net.partyUnwatch=()=>{};net.pstat=()=>{};net.mobWrite=()=>{};net.mobDmg=()=>{};net.mobWatch=net.mobUnwatch=net.mobDmgWatch=net.mobDmgUnwatch=()=>{};
+net.spotWrite=net.spotClear=()=>{};net.spotWatch=net.spotUnwatch=()=>{};net.killPush=()=>{};net.killWatch=net.killUnwatch=()=>{};
   net.partyInvite=(target,pid,name)=>rpc({t:'party',op:'invite',to:target});
   net.inviteDrop=from=>{send({t:'party',op:'drop',from});return Promise.resolve()};
   net.partyAccept=(inv,info)=>rpc({t:'party',op:'accept',from:inv.from});
