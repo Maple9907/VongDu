@@ -322,8 +322,8 @@ const BK=[
 /*9 Thiên Đạo Chí Tôn: tổng hợp mọi chiêu*/{pd:[0,300],cw:[1.2,2.2],m:[[['sl',2],['bm',3,{n:2}],['fn',3,{n:7}],['ds',2,{n:2}],['ht',2]],[['qk',3],['bm',3,{n:3,x:1}],['ht',3,{n:8}],['lp',3],['rg',2,{n:14,m:2}],['ds',2,{n:3}],['sn',1,{n:2}]],[['nv',3],['pl',2],['bm',3,{n:3,x:1}],['ht',4,{n:10}],['rg',3,{n:16,m:3}],['lp',3],['ds',3,{n:3,w:.35}],['qk',2],['sn',2,{n:3}],['fn',2,{n:9,a:1.6}]]]}],
 DK={pd:[0,300],cw:[2,3],m:[[['sl',3],['fn',2],['bm',2]],[['sl',3],['fn',2],['bm',2],['ht',2]],[['qk',3],['ht',3],['rg',2],['sn',1]]]};
 /* ---- hazard (vùng sát thương có báo hiệu) & đạn: dùng pool, không cấp phát mỗi frame ---- */
-function hz(o){const z=HP.pop()||{};z.ty='c';z.x=z.y=z.r=z.r0=z.ux=z.uy=z.L=z.w=z.dm=z.po=z.sw=z.mg=z.pl=z.fr=z.tq=0;z.c='#ff5a5a';z.o=z.nx=null;Object.assign(z,o);z.tt=z.t;G.hq.push(z);return z}
-function pj(o){const p=PP.pop()||{};p.dm=p.vx=p.vy=p.t=p.ef=0;p.c='#fff';p.l=1.8;p.hr=24;p.z=1;p.mg=1;Object.assign(p,o);G.pj.push(p);return p}
+function hz(o){const z=HP.pop()||{};z.rid=z.hs=0;z.ty='c';z.x=z.y=z.r=z.r0=z.ux=z.uy=z.L=z.w=z.dm=z.po=z.sw=z.mg=z.pl=z.fr=z.tq=0;z.c='#ff5a5a';z.o=z.nx=null;Object.assign(z,o);z.tt=z.t;G.hq.push(z);return z}
+function pj(o){const p=PP.pop()||{};p.rid=p.hs=0;p.dm=p.vx=p.vy=p.t=p.ef=0;p.c='#fff';p.l=1.8;p.hr=24;p.z=1;p.mg=1;Object.assign(p,o);G.pj.push(p);return p}
 function inZ(z){const dx=G.x-z.x,dy=G.y-z.y;if(z.ty=='l'){const pr=dx*z.ux+dy*z.uy;return pr>-10&&pr<z.L&&Math.abs(dx*z.uy-dy*z.ux)<z.w+12}const d=Math.hypot(dx,dy/EL);return z.ty=='o'?d>z.r0&&d<z.r:d<z.r}/* vòng vẽ elip (dẹt .55) nên hitbox cũng tính theo elip → vẽ đâu trúng đó */
 function procP(dt){const a=G.pj;let w=0;for(let i=0;i<a.length;i++){const p=a[i];p.x+=p.vx*dt;p.y+=p.vy*dt;let k=(p.l-=dt)>0;if(k&&Math.hypot(p.x-G.x,p.y-(G.y-28))<p.hr){hurt(p.dm,p.t,p.ef=='p',p.ef=='s',0,p.mg);k=false}if(k)a[w++]=p;else PP.push(p)}a.length=w}
 function procH(dt){const a=G.hq;let w=0;for(let i=0;i<a.length;i++){const z=a[i],o=z.o;
@@ -728,7 +728,7 @@ $('#sprs').onclick=function(){if(!G||!SPO)return;if(!rsK){rsK=1;this.textContent
 $('#tb0').onclick=()=>spTab(0);$('#tb1').onclick=()=>spTab(1);$('#tb2').onclick=()=>spTab(2);$('#tb3').onclick=()=>spTab(3);$('#tb4').onclick=()=>spTab(4);
 $('#spx').onclick=()=>tsp(0);$('#sp').addEventListener('pointerdown',e=>{if(e.target==e.currentTarget)tsp(0)});
 HUDE.onclick=()=>{tsp();HUDE.blur()};HUDE.onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();tsp()}};
-function sepM(){if(window.SRV&&SRV.on)return;const a=G.mons;for(let i=0;i<a.length;i++){const p=a[i];if(p.hp<=0)continue;for(let j=i+1;j<a.length;j++){const q=a[j];if(q.hp<=0)continue;const dx=q.x-p.x,dy=q.y-p.y,dd=M.hypot(dx,dy),mn=(MT[p.t].r+MT[q.t].r)*.85;if(dd<mn){if(dd<.01){p.x-=1;q.x+=1}else{const k=(mn-dd)*.25/dd;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}}}}}
+function sepM(){if(window.SRV&&SRV.on)return;const a=G.mons;for(let i=0;i<a.length;i++){const p=a[i];if(p.hp<=0||p.gh)continue;for(let j=i+1;j<a.length;j++){const q=a[j];if(q.hp<=0||q.gh)continue;const dx=q.x-p.x,dy=q.y-p.y,dd=M.hypot(dx,dy),mn=(MT[p.t].r+MT[q.t].r)*.85;if(dd<mn){if(dd<.01){p.x-=1;q.x+=1}else{const k=(mn-dd)*.25/dd;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}}}}}
 function nm(rg){let b=null,bd=rg;for(const q of G.mons)if(q.hp>0){const d=M.hypot(q.x-G.x,q.y-G.y);if(d<bd){bd=d;b=q}}return b}
 function begin(s){if(!s.iv){s.eq=(s.eq||[]).map(x=>x&&x.r>0?{...x,r:x.r+1}:x);s.iv=2}G={cls:s.cls,tl:s.tl,name:s.name,lv:s.lv,xp:s.xp,al:alOf(s),kills:s.kills||0,rc:s.rc>0?s.rc:0,inv:0,mp:0,cdk:[0,0,0],sh:0,shT:0,bf:null,ht:0,ac:0,dx:1,dy:0,hp:1,x:0,y:0,f:1,sw:0,cd:0,tgt:null,auto:0,au:AS(s.au,s.am),br:s.br===0||s.br===1?s.br:-1,dead:0,mons:[],fade:0,pcd:0,mv:0,pk:0,mk:0,gd:M.max(0,M.floor(+s.gd||0)),gm:[0,1,2,3].map(t=>[...Array(10)].map((_,l)=>M.max(0,((s.gm||[])[t]||[])[l]|0))),rs:M.max(0,s.rs|0),fg:FGO(s.fg),es:ESL(s),dm:M.max(0,s.dm|0),vc:Array.isArray(s.vc)?s.vc.filter(x=>CM[x]):0,eq:[0,1,2,3,4,5].map(i=>FP(CI((s.eq||[])[i],i),s.cls)),bk:Array.isArray(s.bk)?s.bk.filter(x=>MP[x]):[],ps:0,pd:0,sl:0,pj:[],hq:[],hc:0,lc:0,kc:0,kz:0,nh:0,hz:0,hzt:0,zs:0,zt:0,pf:0,tlt:0,bc:s.bc>0?s.bc:0,ks:0,ro:0,bowc:s.bcnt||0,tankc:s.tankc||0,zn:[],stl:0,stb:null,rfT:0,rfv:0,rfr:0,hot:0,hv:0,jp:0};
  fgMig();const z=st(),gone=s.hp===0,sm=typeof s.map=='number'?OLD[s.map]:s.map,sm2=MP[sm]?sm:'kn0',rr=CM[MP[sm2].ct].rs,mi=gone?rr[0]:sm2,sx=gone?rr[1]:typeof s.x=='number'?s.x:(mi!='kn0'?300:260),sy=gone?rr[2]:typeof s.y=='number'?s.y:400;if(!G.vc){G.vc=[];for(const c of CT){G.vc.push(c.id);if(c.id==MP[sm2].ct)break}}
@@ -925,7 +925,7 @@ function upd(dt){const s=st(),m=MP[G.map],E=TE();if(G.kkT>0)G.kkT-=dt;if(G.kkc>0
  if(G.stl>0&&(G.stl-=dt)<=0)G.stb=null;if(G.rfT>0)G.rfT-=dt;if(G.jp>0)G.jp-=dt;if(G.hot>0){G.hot-=dt;G.hp=M.min(s.mhp,G.hp+G.hv*dt);G.ps=G.sl=0;if((G.hnt=(G.hnt||0)-dt)<=0){G.hnt=1;if(G.hp<s.mhp-1)ft(G.x,G.y-90,'+'+M.round(G.hv),'#7dffb0',.7)}}procZ(dt,s);
   const wa=G.auto||G.ah||keys[' ']||keys.j;let at=tg&&M.hypot(tg.x-G.x,tg.y-G.y)<=s.rg+MT[tg.t].r*.6?tg:near(s.rg);if(at&&wa&&G.cd<=0&&!(G.fw>0)){G.cd=s.as/(G.pf>0&&G.pf--?2:1);hit(at,s);SFX.atk();if(SHT[G.cls]&&SHT[G.cls].atk)G.anS=['atk',anNow()]}if(G.auto&&(G.ac-=dt)<=0){G.ac=.4;const A=G.au;if(A.hp&&G.hp<s.mhp*A.hpP/100&&G.gd-POC()>=A.rs)pot(1);if(A.mp&&G.mp<s.mmp*A.mpP/100&&G.gd-MPC()>=A.rs)mpot(1);if(at&&G.mp>=s.mmp*A.sm/100)for(let i=SK[G.cls].length-1;i>=0;i--){const k=SK[G.cls][i];if(!A.sk[i]||k.hold&&G.hp>s.mhp*.6&&!(k.zk=='r'&&window.MMO&&MMO.allyLow&&MMO.allyLow(60)))continue;cast(i,1)}}
  G.hp=M.min(s.mhp,G.hp+s.mhp*(m.safe?.05:((E.hr?.012:.004)+s.hg)*(1+(E.fr||0)))*dt);
- AI2.begin(s,m);for(const q of G.mons){if(q.sv){SRV.mtick(q,dt,s);continue}const d=MT[q.t];if(q.mn&&!q.gone)AI2.minion(q);
+ AI2.begin(s,m);for(const q of G.mons){if(q.sv){SRV.mtick(q,dt,s);continue}if(q.gh){if(window.MMO)MMO.ghostTick(q,dt,s);continue}const d=MT[q.t];if(q.mn&&!q.gone)AI2.minion(q);
   if(q.hp<=0){if((q.rt-=dt)<=0&&(q.rt<=-2||M.hypot(q.hx-G.x,q.hy-G.y)>160)){q.hp=d.hp;q.bk=d.b?d.hp*.2:0;q.et=q.p2=q.p3=q.sh2=0;q.x=q.hx;q.y=q.hy;q.ag=0;q.sl=0;q.rl=0;q.tw=0;q.stn=q.fr=q.ro=q.ad=q.kn=q.sf=0;q.dots=null;AI2.reset(q,d)}continue}
   if(q.sl>0&&(q.sl-=dt)<=0)q.sf=0;q.sc-=dt;if(q.ad>0)q.ad-=dt;if(q.ro>0)q.ro-=dt;if(q.kn>0)q.kn-=dt;if(q.fk>0)q.fk-=dt;if(q.bf2>0)q.bf2-=dt;if(q.rv>0)q.rv-=dt;if(q.sti>0)q.sti-=dt;if(q.stg>0)q.stg-=dt;if(q.rlc>0)q.rlc-=dt;const en=d.b&&q.hp<d.hp*.5,ms=d.sp*(q.ro>0?0:1)*(q.sl>0?(q.sf||.45):1)*(en?1.3:1)*(q.bf2>0?1.25:1)*(q.af==1?1.25:1),ak=d.atk*(q.ad>0?1-(q.av||.2):1)*(d.b?(q.et>180?2:1)*(q.hp<d.hp*.5?1.2:1):1)*(q.bf2>0?1.2:1),ba=(d.b?(q.et>180?1.5:1)*(q.hp<d.hp*.2?1.3:1):1)*(q.af==1?1.2:1),dx=G.x-q.x,dy=G.y-q.y,dd=M.hypot(dx,dy)||1,hh=M.hypot(q.hx-q.x,q.hy-q.y);if(d.b){if(q.ag)q.et=(q.et||0)+dt;else q.et=q.en2=0;const ty=q.y-BH(d)-60;if(q.et>180&&!q.en2){q.en2=1;ft(q.x,ty,'CUỒNG NỘ!','#ff4d4d',1.4)}if(q.hp<d.hp*.5&&!q.p2){q.p2=1;ft(q.x,ty,'GIAI ĐOẠN 2','#ffd43b',1.2);AI2.phase(q,d,2)}if(q.hp<d.hp*.2&&!q.p3){q.p3=1;q.sh2=d.hp*.1;ft(q.x,ty,'LÁ CHẮN ẢO','#8fe0ff',1.2);AI2.phase(q,d,3)}}
   if(q.dots){for(const o of q.dots){if(q.hp<=0)break;o.tk-=dt;if(o.tk<=0){o.tk+=o.iv;o.n--;hit(q,s,o.m,o.f,1)}}q.dots=q.dots.filter(o=>o.n>0);if(q.hp<=0)continue}if(q.stn>0){if((q.stn-=dt)<=0&&d.b)q.sti=2.5;q.tw=0;q.dsh=0;q.sq=null;q.cmb=0;q.tf=q.tu=null;continue}if(q.fr>0){q.fr-=dt;q.tw=0;q.dsh=0;q.sq=null;q.cmb=0;q.tf=q.tu=null;q.x-=dx/dd*d.sp*1.1*dt;q.y-=dy/dd*d.sp*1.1*dt;q.f=dx>=0?-1:1;continue}
@@ -1685,7 +1685,8 @@ requestAnimationFrame(loop);
    · Boss thế giới: HP dùng chung, hồi sinh 30 phút sau khi bị hạ, ai đánh cũng nhận thưởng riêng
    · Tổ đội tối đa 5: khung máu đồng đội, +10% EXP mỗi đồng đội cùng map, hào quang Mục Sư lan sang đồng đội
    · Chat Thế giới / Tổ đội, bong bóng chat, chặn người chơi, 1 tài khoản = 1 phiên
-   Quái thường vẫn chạy riêng trên máy từng người; chỉ người chơi, boss, tổ đội và chat được đồng bộ. */
+   Quái / boss khi KHÔNG ở trong tổ đội vẫn chạy riêng trên máy từng người.
+   Khi có tổ đội: máy ĐỘI TRƯỞNG làm host chạy quái + boss, thành viên cùng map thấy y hệt (xem khối "ĐỘI TRƯỞNG = HOST"). */
 (function(){
 const Q=s=>document.querySelector(s),RESP=30*60*1000,PMAX=5,AURA_R=162,SHARE_R=680,   /* bán kính nhận EXP chung (px) */
  esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
@@ -1694,7 +1695,8 @@ const Q=s=>document.querySelector(s),RESP=30*60*1000,PMAX=5,AURA_R=162,SHARE_R=6
   party:null,pst:{},invites:[],log:[],keys:new Set(),mute:new Set(),mhp:100,mhpAt:0,aura:false,xpm:1,xpn:1,map:null,
   sent:null,sentAt:0,psAt:0,aSeq:0,aName:'',lastAn:null,kicked:false,tab:'p',open:false,tpAt:0,lastSay:0,selfBub:null,
   warned:0,html:'',unParty:null,unWorld:null,leaving:0,noRep:0,remoteFin:0,partyLoaded:false,
-  spot:null,spotAt:0,spotOn:0,kseen:new Set(),killN:0};
+  spot:null,spotAt:0,spotOn:0,kseen:new Set(),killN:0,
+   hid:0,kmid:new Map(),hs:null,gm:0,rz:new Map(),rp:new Map(),roleK:'',hubS:'',hubT:0,hubAt:0,hubOn:0,hubPid:'',mobDmg:{}};
 try{JSON.parse(localStorage.getItem('mmo_mute')||'[]').forEach(u=>S.mute.add(u))}catch(e){}
 const saveMute=()=>{try{localStorage.setItem('mmo_mute',JSON.stringify([...S.mute].slice(-200)))}catch(e){}},
  me=()=>S.net&&S.net.uid||'',
@@ -1737,6 +1739,9 @@ function remoteDeath(bq,id,b){
 function bossSync(){
   if(!G||scr!==3||SVW())return;
   const id=G.map,m=MP[id];if(!m||!m.bo)return;
+  if(S.gm){   /* bản sao boss do host điều khiển: chỉ lo khâu chết/thưởng theo HP chung */
+    if(useShared()){const b0=S.bs[id];if(!b0)initBoss(id);else if(!(b0.deadAt===0&&b0.hp>0)){const bq0=G.mons.find(q=>q.b);if(bq0&&bq0.hp>0){remoteDeath(bq0,id,b0);bq0.dAt=Date.now();bq0.hd=0}}}
+    return}
   const sh=useShared();if(!sh&&!fbMode())return;
   const b=sh?S.bs[id]:null;let alive,cyc;
   if(sh){alive=!b||(b.deadAt===0&&b.hp>0);cyc=b?b.cyc:1;if(!b)initBoss(id)}
@@ -1778,7 +1783,7 @@ function tickNet(){
   const ch=!o||Math.abs(p.x-o.x)>=3||Math.abs(p.y-o.y)>=3||p.f!==o.f||p.m!==o.m||Math.abs(p.h-o.h)>=2||p.d!==o.d||p.q!==o.q||p.l!==o.l||p.p!==o.p||p.sl!==o.sl;
   if((ch&&now-S.sentAt>=(SVW()?100:220))||now-S.sentAt>=10000){S.sent=p;S.sentAt=now;S.net.pos(p)}
   if(S.party&&now-S.psAt>=1500){S.psAt=now;S.net.pstat({m:G.map,x:p.x,y:p.y,h:p.h,l:p.l,c:p.c,n:p.n})}
-  tickFollow();tickSpot();tickMobHost();tickMobSync();flushMobDmg();}
+  tickFollow();tickSpot();flushMobDmg();ghostWatch();}
 function onPresence(type,uid,d){
   if(uid===me())return;
   if(type==='del'||!d||typeof d.x!=='number'||typeof d.y!=='number'||!(d.c>=0&&d.c<=5)){S.pl.delete(uid);return}
@@ -1824,11 +1829,12 @@ function drawAll(L,c,tm,dt){
   if(S.selfBub&&S.selfBub.until>tm)L.push({y:G.y+3,f:()=>bubble(c,G.x,G.y-122,S.selfBub.m)})}
 
 /* ================= TỔ ĐỘI ================= */
-function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));S.net.mobWatch(pid,v=>{S.pmobs=v});S.net.mobDmgWatch(pid,(k,d)=>{if(S.party&&S.party.leader===me()){S.pdmgQ=S.pdmgQ||[];S.pdmgQ.push(d)}});try{S.net.spotWatch(pid,v=>{S.spot=v||null})}catch(e){}try{S.net.killWatch(pid,onPartyKill)}catch(e){}}
+function watchParty(pid){S.net.partyWatch(pid);if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));S.roleK='';syncRole();try{S.net.spotWatch(pid,v=>{S.spot=v||null})}catch(e){}try{S.net.killWatch(pid,onPartyKill)}catch(e){}}
 function dropParty(){
-  S.party=null;S.pst={};S.psAt=0;S.sent=null;S.pmobs={};S.pdmgQ=[];S.mobDmg={};S.spot=null;S.spotOn=0;S.spotAt=0;S.kseen.clear();
+  try{ghostExit()}catch(e){}
+  S.party=null;S.pst={};S.psAt=0;S.sent=null;S.hs=null;S.roleK='';S.hubS='';S.mobDmg={};S.spot=null;S.spotOn=0;S.spotAt=0;S.kseen.clear();
   if(S.unParty){try{S.unParty()}catch(e){}S.unParty=null}
-  try{S.net.partyUnwatch(false)}catch(e){}try{S.net.mobUnwatch()}catch(e){}try{S.net.mobDmgUnwatch()}catch(e){}try{S.net.spotUnwatch()}catch(e){}try{S.net.killUnwatch()}catch(e){}}
+  try{S.net.partyUnwatch(false)}catch(e){}try{S.net.hostUnwatch()}catch(e){}try{S.net.mobDmgUnwatch()}catch(e){}try{S.net.spotUnwatch()}catch(e){}try{S.net.killUnwatch()}catch(e){}}
 function onParty(pid,v){
   if(S.leaving)return;
   if(!v||!v.members||!v.members[me()]){
@@ -1839,7 +1845,7 @@ function onParty(pid,v){
   if(old){for(const u in v.members)if(!old[u])sys('➕ '+esc(v.members[u].n)+' đã vào tổ đội');
     for(const u in old)if(!v.members[u])sys('➖ '+esc(old[u].n)+' đã rời tổ đội')}
   if(!S.unParty)S.unParty=S.net.chatListen('party:'+pid,(k,d)=>addChat('party',k,d));
-  S.sent=null;ui()}
+  S.sent=null;syncRole();ui()}
 async function doCreate(){
   if(S.party)return S.party;
   const pid=await S.net.partyCreate(me0());
@@ -1921,53 +1927,257 @@ function tickFollow(){
   load(L.m,Math.max(30,Math.min(mp.w-30,L.x||mp.w/2)),Math.max(60,Math.min(mp.h-20,L.y||mp.h/2)));
   G.pcd=1.2;
 }
-const mobMid=q=>q.mid||(q.t+'_'+Math.round(q.hx)+'_'+Math.round(q.hy));
+const mobMid=q=>q.b?'B':q.mn?(q.hid||(q.hid='n'+(++S.hid))):(q.mid||(q.t+'_'+Math.round(q.hx)+'_'+Math.round(q.hy)));
+/* Máy đội trưởng làm host: mặc định BẬT khi tổ đội có ≥2 người (lưu 'mmo_host2'='0' nếu đội trưởng chủ động tắt) */
+const hostFlag=()=>{if(S.host===undefined){try{S.host=localStorage.getItem('mmo_host2')==='0'?0:1}catch(e){S.host=1}}return S.host};
+const killSeen=mid=>{const t=S.kmid.get(mid);return !!t&&Date.now()-t<6000};
+function markKill(mid){S.kmid.set(mid,Date.now());if(S.kmid.size>300){const cut=Date.now()-10000;for(const [k,t] of S.kmid)if(t<cut)S.kmid.delete(k)}}
 /* đội trưởng CHỌN BÃI QUÁI: phát vị trí mình đang đứng, cả đội dồn tới đánh chung.
-   Bật/tắt cùng nút "đồng bộ quái"; tắt (hoặc rời đội) thì xoá pspot cho sạch. */
+   Bật/tắt cùng nút "host quái"; tắt (hoặc rời đội) thì xoá pspot cho sạch. */
 function tickSpot(){
   if(!S.party||S.party.leader!==me()||!S.net||!S.net.ready||!G)return;
   const solo=Object.keys(S.party.members||{}).length<2;
-  if(!S.host||G.dead||solo){
+  if(!hostFlag()||G.dead||solo){
     if(S.spotOn){S.spotOn=0;try{S.net.spotClear(S.party.id)}catch(e){}}
     return}
   S.spotOn=1;
   const now=Date.now();
   if(now-(S.spotAt||0)<1200)return;S.spotAt=now;
   try{S.net.spotWrite(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),ts:M.round(NOW())})}catch(e){}}
-function tickMobHost(){
-  if(S.host===undefined){try{S.host=localStorage.getItem('mmo_host')==='1'?1:0}catch(e){S.host=0}}
-  if(!S.host||!S.party||S.party.leader!==me()||Object.keys(S.party.members).length<2||G.dead)return;
-  const now=Date.now();
-  if(S.pdmgQ&&S.pdmgQ.length){
-    for(const e of S.pdmgQ){const mid=e.mid;for(const q of G.mons){if(q.b||q.mn||q.hp<=0)continue;if(mobMid(q)===mid){q.hp=Math.max(0,q.hp-(e.d||0));break}}}
-    S.pdmgQ=[]}
-  if(now-(S.hostAt||0)<250)return;S.hostAt=now;
-  /* quái sống đưa vào trước (gần trước), quái chết sau — quái chết vẫn phải phát để thành viên
-     thấy hp=0 và hạ cùng lúc. Giới hạn 24 node cho nhẹ. */
-  const o={},ts=Math.round(now),a=[];
-  for(const q of G.mons){if(q.b||q.mn)continue;if(Math.hypot(q.x-G.x,q.y-G.y)>1200)continue;a.push([q,q.hp<=0])}
-  a.sort((u,w)=>(u[1]-w[1])||(M.hypot(u[0].x-G.x,u[0].y-G.y)-M.hypot(w[0].x-G.x,w[0].y-G.y)));
-  for(let i=0;i<a.length&&i<24;i++){const q=a[i][0];o[mobMid(q)]={hp:Math.max(0,Math.round(q.hp)),max:MT[q.t].hp,ts}}
-  S.net.mobWrite(S.party.id,o)}
-function tickMobSync(){
-  if(!S.party||S.party.leader===me()||!S.pmobs||G.dead)return;
-  const L=S.pst[S.party.leader];if(!L||L.m!==G.map||NOW()-(L.ts||0)>20000)return;
-  const now=NOW();
+
+/* ================= ĐỘI TRƯỞNG = HOST QUÁI / BOSS =================
+   · Máy đội trưởng chạy toàn bộ AI quái + boss như bình thường, rồi phát "ảnh chụp" lên phost/<đội> (~7 lần/giây):
+     vị trí, máu, hướng, báo hiệu chiêu, trạng thái khống chế, vùng nổ (hazard) và đạn của boss.
+   · Thành viên CÙNG MAP không chạy quái riêng nữa: dựng bản sao (q.gh=1) theo ảnh chụp → thấy y hệt máy đội trưởng.
+   · Thành viên đánh bản sao: sát thương + khống chế gửi về pdmg/<đội> → đội trưởng áp lên quái thật → máu chung.
+   · Khác map / host tắt / mất kết nối (ảnh chụp cũ >6s) → bản sao tự chuyển lại thành quái cục bộ như trước. */
+const HOST_R=1100,HOST_CAP=30,GH_STALE=6000;
+const hostOn=()=>!!(hostFlag()&&S.party&&S.party.leader===me()&&Object.keys(S.party.members||{}).length>=2&&G&&scr===3&&S.net&&S.net.ready&&!SVW());
+function encMob(q){
+  let f=0;
+  if(q.ag)f|=1;if(q.sl>0)f|=2;if(q.fr>0)f|=4;if(q.rl)f|=8;if(q.p2)f|=16;if(q.p3)f|=32;if(q.ro>0)f|=64;if(q.dsh>0)f|=128;if(q.bf2>0)f|=256;
+  if(q.stn>0){f|=512;if(q.stt==='frz')f|=1024}if(q.mn)f|=2048;
+  const alive=q.hp>0,tw=alive&&q.tw>0?M.round(q.tw*100):0;
+  return[mobMid(q),q.t,M.round(q.x),M.round(q.y),q.f<0?-1:1,alive?M.max(1,M.round(q.hp)):0,M.round(q.bk>0?q.bk:0),M.round(q.sh2>0?q.sh2:0),f,
+    tw,tw?M.round((q.tt||0)*100):0,tw?(q.tk||''):'',tw?M.round(q.tx||0):0,tw?M.round(q.ty||0):0,q.af|0,M.round(q.et||0)]}
+function hostPub(){
+  if(!hostOn()){
+    if(S.hubOn){S.hubOn=0;S.hubS='';try{S.net.hostClear(S.hubPid)}catch(e){}}
+    return}
+  const now=Date.now(),pts=[[G.x,G.y]];let near=0;
+  for(const u in S.party.members){if(u===me())continue;const s=S.pst[u];if(s&&s.m===G.map&&NOW()-(s.ts||0)<12000){near++;pts.push([+s.x||0,+s.y||0])}}
+  if(now-(S.hubAt||0)<(near?130:2000))return;
+  const a=[];
   for(const q of G.mons){
-    if(q.b||q.mn)continue;
-    const s=S.pmobs[mobMid(q)];
-    if(!s||now-(s.ts||0)>4000)continue;
-    const hp=s.hp|0;
-    if(hp<=0){if(q.hp>0)q.hp=0}
-    else if(q.hp>hp)q.hp=hp;
-    else if(q.hp<=0&&q.rt>0){q.hp=hp;q.rt=0;q.x=q.hx;q.y=q.hy;q.ag=0}
+    if(q.gh||q.gone)continue;
+    let d=1e9;for(const p of pts){const e=M.hypot(q.x-p[0],q.y-p[1]);if(e<d)d=e}
+    if(!q.b&&d>HOST_R)continue;
+    a.push([q,d])}
+  a.sort((u,w)=>((w[0].b|0)-(u[0].b|0))||((u[0].hp<=0)-(w[0].hp<=0))||(u[1]-w[1]));
+  const k=[];for(let i=0;i<a.length&&k.length<HOST_CAP;i++)k.push(encMob(a[i][0]));
+  const h=[],hi=[],pj=[];
+  for(const z of G.hq){
+    if(!z.rid){z.rid=++S.hid;z.hs=now}
+    if(now-z.hs<520&&h.length<14)h.push([z.rid,z.ty,M.round(z.x),M.round(z.y),M.round(z.r||0),M.round(z.r0||0),M.round((z.ux||0)*1000),M.round((z.uy||0)*1000),M.round(z.L||0),M.round(z.w||0),M.round(z.dm||0),(z.po?1:0)|(z.sw?2:0)|(z.mg?4:0)|(z.fr?8:0),M.round(z.pl||0),z.tq|0,z.c,M.round(z.t*100),M.round((z.tt||0)*100)]);
+    else hi.push(z.rid)}
+  for(const o of G.pj){
+    if(o.vis)continue;
+    if(!o.rid){o.rid=++S.hid;o.hs=now}
+    if(now-o.hs<460&&pj.length<48)pj.push([o.rid,M.round(o.x),M.round(o.y),M.round(o.vx),M.round(o.vy),M.round(o.l*100),M.round(o.dm||0),o.c,o.z||1,o.ef||0,o.t|0,o.mg?1:0,o.hr|0])}
+  let s=JSON.stringify({k,h,hi,p:pj});
+  if(s.length>18000)s=JSON.stringify({k:k.slice(0,16),h:[],hi:[],p:[]});
+  S.hubAt=now;
+  if(s===S.hubS&&now-(S.hubT||0)<1000)return;       /* không có gì đổi → chỉ gửi nhịp tim mỗi 1s */
+  S.hubS=s;S.hubT=now;S.hubOn=1;S.hubPid=S.party.id;
+  S.net.hostWrite(S.party.id,{m:G.map,ts:M.round(NOW()),s})}
+/* sát thương / khống chế do thành viên gửi về → áp lên quái THẬT của đội trưởng */
+function hostApplyDmg(e){
+  if(!e||typeof e.mid!=='string'||!G||G.map==null||NOW()-(e.ts||0)>6000||S.gm)return;
+  let q=null;for(const o of G.mons){if(!o.gh&&!o.gone&&mobMid(o)===e.mid){q=o;break}}
+  if(!q||q.hp<=0)return;
+  const h=+e.d||0,b=+e.b||0,s=+e.s||0;
+  if(b>0&&q.bk>0){q.bk=M.max(0,q.bk-b);if(q.bk<=0){q.bk=0;ft(q.x,q.y-MT[q.t].r*2-60,'PHÁ KHIÊN!','#ffd43b',1.3);try{SFX.shieldbreak()}catch(_){}AI2.bkBreak(q)}}
+  if(s>0&&q.sh2>0)q.sh2=M.max(0,q.sh2-s);
+  if(h>0){q.hp-=h;ft(q.x+rnd(-14,14),q.y-34,String(M.round(h)),'#b9c8ff',.9)}
+  if(h>0||b>0)q.ag=1;
+  if(e.cy&&q.hp>0){try{cc(q,String(e.cy),+e.cv||0,+e.cp||0)}catch(_){}}
+  if(q.hp<=0)hostKill(q,e.u)}
+function hostKill(q,uid){
+  if(q.b){
+    if(useShared()){q.hp=M.max(1,q.hp);return}       /* boss thế giới: chết theo HP chung (bossSync), tránh hồi sinh nhầm */
+    q.hp=0;q.rt=1e9;try{SFX.die(q)}catch(_){}try{bossDown(q)}catch(_){}return}
+  q.hp=0;
+  if(q.mn){q.rt=1e9;q.gone=1;AI2.X.gn=1;if(G.tgt===q)G.tgt=null;ft(q.x,q.y-50,'TIÊU TÁN','#c9a8ff',.9);return}
+  q.rt=MT[q.t].el?ELRS:8;try{SFX.die(q)}catch(_){}
+  if(G.tgt===q)G.tgt=null;
+  hostKillShare(q,uid)}
+/* quái bị thành viên hạ trên máy host: chia EXP cho cả đội (kể cả đội trưởng nếu đứng gần) — mỗi người đúng 1 lần/con (chống trùng theo mid) */
+function hostKillShare(q,uid){
+  const m=MT[q.t],mid=mobMid(q);
+  if(killSeen(mid))return;markKill(mid);
+  let e=0;try{e=M.round(m.xp*st().xm*xf(m)*(S.xpm||1))}catch(_){}
+  if(!(e>0))return;
+  try{S.net.killPush(S.party.id,{m:G.map,x:M.round(q.x),y:M.round(q.y),e,mid:String(mid).slice(0,24),ts:M.round(NOW())})}catch(_){}
+  if(!G.dead&&M.hypot(G.x-q.x,G.y-q.y)<=SHARE_R)grantExp(e,(S.party.members[uid]&&S.party.members[uid].n)||'đồng đội')}
+/* host nhận gói sát thương của thành viên: áp ngay (không chờ tick) */
+function onHostDmg(d){try{if(hostOn())hostApplyDmg(d)}catch(e){console.warn('[host] dmg',e)}}
+function tickMobHost(){}
+
+/* ---------- phía THÀNH VIÊN: dựng bản sao quái theo ảnh chụp của host ---------- */
+function ghostFresh(){const h=S.hs;return !!(h&&G&&scr===3&&h.m===G.map&&S.party&&S.party.leader!==me()&&NOW()-h.ts<GH_STALE&&!SVW())}
+function ghostEnter(){
+  S.gm=1;S.rz=new Map();S.rp=new Map();
+  G.mons=G.mons.filter(q=>q.gh);G.tgt=null;G.hq.length=0;G.pj.length=0}
+function ghostExit(){
+  if(!S.gm)return;S.gm=0;S.rz=new Map();S.rp=new Map();
+  if(!G)return;
+  G.mons=G.mons.filter(q=>!(q.gh&&q.mn));
+  for(const q of G.mons)if(q.gh){
+    delete q.gh;delete q.gid;q.hx=q.wx=q.x;q.hy=q.wy=q.y;q.ag=0;q.tw=0;q.sq=null;q.tf=q.tu=null;
+    if(q.hp<=0)q.rt=M.max(q.rt||0,8);else q.rt=0}
+  if(G.tgt&&!G.mons.includes(G.tgt))G.tgt=null}
+function ghostFlags(q,e,now,lag){
+  const fl=e[8]|0,rc=now-(q.lc||0)<1200;
+  q.ag=fl&1?1:0;q.rl=fl&8?1:0;q.p2=fl&16?1:0;q.p3=fl&32?1:0;q.dsh=fl&128?.3:0;q.bf2=fl&256?1:0;
+  if(!rc){q.sl=fl&2?2:0;q.fr=fl&4?2:0;q.ro=fl&64?2:0;q.stn=fl&512?2:0;q.stt=fl&1024?'frz':'stn'}
+  else if(fl&512&&!(q.stn>0)){q.stn=2;q.stt=fl&1024?'frz':'stn'}
+  const tw=(e[9]|0)/100;
+  if(tw>0){q.tw=M.max(.02,tw-lag);q.tt=((e[10]|0)/100)||.01;q.tk=e[11]||undefined;q.tx=e[12];q.ty=e[13]}
+  else{q.tw=0;q.tk=undefined}
+  q.af=e[14]|0;q.et=e[15]|0}
+function mkGhost(e,now){
+  const dd=MT[e[1]],fl=e[8]|0,
+   q={gh:1,gid:e[0],gs:now,t:e[1],x:e[2],y:e[3],nx:e[2],ny:e[3],hx:e[2],hy:e[3],wx:e[2],wy:e[3],hp:e[5],bk:e[6]||0,sh2:e[7]||0,cd:1,rt:e[5]>0?0:8,ph:rnd(0,6),f:e[4]<0?-1:1,ag:0,wt:3,sc:1,tw:0,rl:0,af:e[14]|0,et:e[15]|0};
+  if(dd.b)q.b=1;
+  if(fl&2048){q.mn=1;q.hid=e[0]}else if(!dd.b)q.mid=e[0];
+  if(q.hp>0)ghostFlags(q,e,now,0);
+  return q}
+function ghostRevive(q,e,now,lag){
+  q.hp=e[5];q.bk=e[6]||0;q.sh2=e[7]||0;q.rt=0;q.rw=0;q.myD=0;q.dAt=0;q.hd=0;q.lh=0;
+  q.x=q.nx=e[2];q.y=q.ny=e[3];q.stn=q.fr=q.ro=q.sl=q.ad=q.kn=0;q.dots=null;
+  if(q.b)S.myDmg[G.map]=0;
+  ghostFlags(q,e,now,lag)}
+function ghostDie(q,now){
+  const contrib=(q.myD||0)>0&&!q.rw;
+  if(q.b){
+    const id=G.map;
+    if(S.myDmg[id]>0&&!G.dead&&q.hp>0){try{remoteDeath(q,id,S.bs[id])}catch(e){console.warn('[host] boss',e)}}
+    q.hp=0;q.rt=1e9;q.dAt=now;q.hd=1;q.tw=0;q.dsh=0;if(G.tgt===q)G.tgt=null;return}
+  q.hp=0;q.rt=q.mn?1e9:(MT[q.t].el?ELRS:8);q.dAt=now;q.hd=1;q.tw=0;q.dsh=0;
+  if(G.tgt===q)G.tgt=null;
+  if(q.mn){fx.push({k:'a',x:q.x,y:q.y,r:30,c:'#c9a8ff',t:0});return}
+  try{SFX.die(q)}catch(e){}
+  if(contrib)ghostReward(q)}
+/* quái bị người khác hạ nhưng mình có đánh: vẫn nhận rơi đồ / nhiệm vụ (EXP chỉ nhận 1 lần/con: hoặc ở đây hoặc qua sự kiện chia EXP) */
+function ghostReward(q){
+  if(!G||G.dead||q.rw)return;q.rw=1;
+  const mid=mobMid(q),got=killSeen(mid);markKill(mid);
+  const lv0=G.lv,hp0=G.hp,s=st(),s2=got?{...s,xm:0}:s;
+  S.noRep=1;try{if(window.SRV)SRV.mute=1}catch(e){}
+  try{q.bk=0;q.sh2=0;q.hp=1;hit(q,s2,1,0,1,1e12)}catch(e){console.warn('[host] reward',e)}
+  S.noRep=0;try{if(window.SRV)SRV.mute=0}catch(e){}
+  if(G.lv===lv0&&G.hp>hp0)G.hp=hp0;      /* chống hút máu từ đòn "ảo" 1e12 */
+  q.hp=0}
+function ghostUpd(q,e,now,lag){
+  q.gs=now;
+  if(q.t!==e[1]){q.t=e[1];if(MT[q.t].b)q.b=1}
+  const hp=e[5],idle=now-(q.lh||0)>1200;
+  if(q.hp<=0){
+    if(hp>0){
+      if(q.dAt&&!q.hd&&now-q.dAt<3500)return;       /* mình vừa hạ cục bộ: chờ host xác nhận chết rồi mới tính hồi sinh */
+      ghostRevive(q,e,now,lag)}
+    else q.hd=1;
+    return}
+  if(hp<=0){ghostDie(q,now);return}
+  q.nx=e[2];q.ny=e[3];q.f=e[4]<0?-1:1;
+  if(hp<q.hp){const dl=q.hp-hp;if(dl>=1&&M.abs(q.x-G.x)<VW/2+120)ft(q.x+rnd(-24,24),q.y-BH(MT[q.t])-14,'-'+M.round(dl),'#b9c8ff',.85);q.hp=hp}
+  else if(idle)q.hp=hp;
+  if(e[6]<q.bk||idle)q.bk=e[6]||0;
+  if(e[7]<q.sh2||idle)q.sh2=e[7]||0;
+  ghostFlags(q,e,now,lag)}
+function ghostFx(d,lag,now){
+  const rz=S.rz,rp=S.rp;
+  if(d.h)for(const e of d.h){
+    if(rz.has(e[0]))continue;
+    const z={rid:e[0],ty:e[1],x:e[2],y:e[3],r:e[4],r0:e[5],ux:e[6]/1000,uy:e[7]/1000,L:e[8],w:e[9],dm:e[10],po:e[11]&1?1:0,sw:e[11]&2?1:0,mg:e[11]&4?1:0,fr:e[11]&8?1:0,pl:e[12],tq:e[13],c:e[14],o:null,nx:null,t:M.max(.03,e[15]/100-lag),tt:(e[16]/100)||.01};
+    G.hq.push(z);rz.set(e[0],{z,at:now})}
+  const live=new Set();if(d.h)for(const e of d.h)live.add(e[0]);if(d.hi)for(const r of d.hi)live.add(r);
+  for(const [r,o] of rz){
+    if(!G.hq.includes(o.z)){if(now-o.at>12000)rz.delete(r);continue}          /* đã nổ / hết hạn */
+    if(!live.has(r)&&o.z.t>.45){G.hq=G.hq.filter(x=>x!==o.z);rz.delete(r)}      /* host đã huỷ (chủ choáng/chết) */
   }
-}
+  if(d.p)for(const e of d.p){
+    if(rp.has(e[0]))continue;rp.set(e[0],now);
+    const l=e[5]/100-lag;if(l<=0)continue;
+    G.pj.push({rid:e[0],x:e[1]+e[3]*lag,y:e[2]+e[4]*lag,vx:e[3],vy:e[4],l,dm:e[6],c:e[7],z:e[8],ef:e[9],t:e[10],mg:e[11],hr:e[12]||24})}
+  if(rp.size>300)for(const [r,t0] of rp)if(now-t0>15000)rp.delete(r)}
+function ghostApply(){
+  const h=S.hs;if(!G||scr!==3)return;
+  if(!ghostFresh()){ghostExit();return}
+  if(!S.gm)ghostEnter();
+  const now=Date.now(),lag=M.max(0,M.min(1.5,(NOW()-h.ts)/1000)),d=h.d||{},mp=new Map(),seen=new Set();
+  for(const q of G.mons)if(q.gh)mp.set(q.gid,q);
+  for(const e of d.k||[]){
+    if(!Array.isArray(e)||!MT[e[1]])continue;
+    seen.add(e[0]);
+    let q=mp.get(e[0]);
+    if(!q){q=mkGhost(e,now);G.mons.push(q);mp.set(e[0],q)}
+    else ghostUpd(q,e,now,lag)}
+  let rm=0;
+  for(const q of G.mons)if(q.gh&&!seen.has(q.gid)&&now-(q.gs||now)>2500){q.gx=1;rm=1}
+  if(rm){G.mons=G.mons.filter(q=>!q.gx);if(G.tgt&&G.tgt.gx)G.tgt=null}
+  try{ghostFx(d,lag,now)}catch(e){console.warn('[host] fx',e)}}
+function onHostSnap(v){
+  if(!v||typeof v.s!=='string'||!S.party||S.party.leader===me()){S.hs=null;if(S.gm)ghostExit();return}
+  let d;try{d=JSON.parse(v.s)}catch(e){return}
+  S.hs={m:v.m,ts:+v.ts||0,d};
+  ghostApply()}
+function ghostOnMap(){
+  S.gm=0;S.rz=new Map();S.rp=new Map();S.hubS='';S.hubT=0;
+  if(S.hs&&G&&scr===3&&ghostFresh())ghostApply()}
+function ghostWatch(){
+  syncRole();
+  if(S.gm&&!ghostFresh())ghostExit()}
+/* mỗi frame cho 1 bản sao: nội suy vị trí về đích của host, đếm lùi báo hiệu, DoT cục bộ (sát thương vẫn gửi về host qua hit()) */
+function ghostTick(q,dt,s){
+  const k=1-M.exp(-dt*12),dx=q.nx-q.x,dy=q.ny-q.y;
+  if(dx*dx+dy*dy>360000){q.x=q.nx;q.y=q.ny}else{q.x+=dx*k;q.y+=dy*k}
+  if(q.tw>0)q.tw=M.max(0,q.tw-dt);if(q.fk>0)q.fk-=dt;if(q.kn>0)q.kn-=dt;
+  if(q.stn>0)q.stn-=dt;if(q.sl>0)q.sl-=dt;if(q.fr>0)q.fr-=dt;if(q.ro>0)q.ro-=dt;if(q.ad>0)q.ad-=dt;
+  if(q.hp>0&&q.dots){for(const o of q.dots){if(q.hp<=0)break;o.tk-=dt;if(o.tk<=0){o.tk+=o.iv;o.n--;hit(q,s,o.m,o.f,1)}}q.dots=q.dots.filter(o=>o.n>0)}}
+/* gom sát thương mình gây lên bản sao → gửi về host mỗi ~120ms */
+function ghostDmg(q,dh,db,ds){
+  if(!(dh>0||db>0||ds>0))return;
+  q.lh=Date.now();q.myD=(q.myD||0)+(dh>0?dh:0)+(db>0?db:0)+(ds>0?ds:0);
+  S.mobDmg=S.mobDmg||{};const id=mobMid(q),o=S.mobDmg[id]||(S.mobDmg[id]={h:0,b:0,s:0});
+  if(dh>0)o.h+=dh;if(db>0)o.b+=db;if(ds>0)o.s+=ds}
+function ghostCC(q,ty,v,p){
+  const on=ty==='stn'||ty==='frz'||ty==='kn'?q.stn>0:ty==='fear'?q.fr>0:ty==='slow'?q.sl>0:ty==='ro'?q.ro>0:ty==='ad'?q.ad>0:false;
+  if(!on)return;
+  q.lc=Date.now();S.mobDmg=S.mobDmg||{};const id=mobMid(q),o=S.mobDmg[id]||(S.mobDmg[id]={h:0,b:0,s:0});
+  o.cy=ty;o.cv=+v||0;o.cp=+p||0}
 function flushMobDmg(){
-  if(!S.mobDmg||!S.party)return;
-  const now=Date.now();if(now-(S.mobAt||0)<200)return;S.mobAt=now;
-  for(const mid in S.mobDmg){const d=Math.round(S.mobDmg[mid]);if(d>=1)S.net.mobDmg(S.party.id,{mid,d});delete S.mobDmg[mid]}
-}
+  if(!S.mobDmg||!S.party||S.party.leader===me())return;
+  const now=Date.now();if(now-(S.mobAt||0)<120)return;S.mobAt=now;
+  let n=0;
+  for(const id in S.mobDmg){
+    const o=S.mobDmg[id];delete S.mobDmg[id];
+    const h=M.round(o.h),b=M.round(o.b),s=M.round(o.s);
+    if(h<1&&b<1&&s<1&&!o.cy)continue;
+    const e={mid:String(id).slice(0,24),d:h>0?h:0};if(b>=1)e.b=b;if(s>=1)e.s=s;if(o.cy){e.cy=o.cy;e.cv=o.cv;e.cp=o.cp}
+    try{S.net.mobDmg(S.party.id,e)}catch(_){}
+    if(++n>=12)break}}
+/* vai trò: đội trưởng nghe sát thương thành viên gửi; thành viên nghe ảnh chụp của host */
+function syncRole(){
+  if(!S.net||!S.party)return;
+  const pid=S.party.id,want=S.party.leader===me()?'L':'M',key=want+pid;
+  if(S.roleK===key)return;
+  S.roleK=key;
+  try{S.net.mobDmgUnwatch()}catch(e){}try{S.net.hostUnwatch()}catch(e){}
+  if(want==='L'){
+    ghostExit();S.hs=null;S.hubS='';
+    try{S.net.mobDmgWatch(pid,(k,d)=>onHostDmg(d))}catch(e){}}
+  else{try{S.net.hostWatch(pid,onHostSnap)}catch(e){}}}
 /* ---------- CHIA EXP CHO CẢ ĐỘI ----------
    Ai hạ cũng được chia: hạ xong đẩy 1 sự kiện lên đội, mọi thành viên khác cùng map +
    đứng gần chỗ hạ (<SHARE_R) đều nhận đúng số EXP đó, kể cả đang đứng yên (không cần bật tự đánh). */
@@ -1978,7 +2188,15 @@ function shareKill(q,gain){
   const now=Date.now();
   if(q.shAt&&now-q.shAt<3000)return;      /* 1 con chỉ chia 1 lần (SRV-5 có thể gọi lại hit) */
   q.shAt=now;
-  try{S.net.killPush(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),e,ts:M.round(NOW())})}catch(e){}
+  const mid=String(mobMid(q)).slice(0,24);markKill(mid);       /* mid: để mọi máy chỉ cộng EXP 1 lần/con, và khớp rule pkill */
+  try{S.net.killPush(S.party.id,{m:G.map,x:M.round(G.x),y:M.round(G.y),e,mid,ts:M.round(NOW())})}catch(_){}
+  S.killN=(S.killN||0)+1}
+function grantExp(e,label){
+  const lv0=G.lv;
+  G.xp+=e;
+  while(G.xp>=need(G.lv)){G.xp-=need(G.lv);G.lv++;G.hp=st().mhp;G.mp=st().mmp;fx.push({k:'r',x:G.x,y:G.y,t:0});ft(G.x,G.y-80,'LÊN CẤP '+G.lv+'!','#ffd43b',1.5);try{SFX.levelup()}catch(_){}const hh=Q('#hn');if(hh)hh.textContent=G.name+' · Lv '+G.lv}
+  ft(G.x,G.y-50,'+'+e+' EXP · '+label,'#9af0cf',.9);
+  if(G.lv>lv0)try{say('+'+ppl(G.tl)+' điểm thuộc tính · chạm avatar để cộng')}catch(_){}
   S.killN=(S.killN||0)+1}
 function onPartyKill(pid,key,v){
   if(!v||!G||G.dead||scr!==3||S.leaving||!S.party||S.party.id!==pid)return;
@@ -1988,12 +2206,9 @@ function onPartyKill(pid,key,v){
   if(v.m!==G.map||NOW()-(v.ts||0)>10000)return;
   const x=+v.x||0,y=+v.y||0,e=M.min(100000,M.max(0,M.round(+v.e||0)));
   if(!(e>0)||M.hypot(G.x-x,G.y-y)>SHARE_R)return;
-  const lv0=G.lv;
-  G.xp+=e;
-  while(G.xp>=need(G.lv)){G.xp-=need(G.lv);G.lv++;G.hp=st().mhp;G.mp=st().mmp;fx.push({k:'r',x:G.x,y:G.y,t:0});ft(G.x,G.y-80,'LÊN CẤP '+G.lv+'!','#ffd43b',1.5);try{SFX.levelup()}catch(e){}const hh=Q('#hn');if(hh)hh.textContent=G.name+' · Lv '+G.lv}
-  ft(G.x,G.y-50,'+'+e+' EXP · '+(S.party.members[u].n||'đồng đội'),'#9af0cf',.9);
-  if(G.lv>lv0)try{say('+'+ppl(G.tl)+' điểm thuộc tính · chạm avatar để cộng')}catch(e){}
-  S.killN=(S.killN||0)+1}
+  const mid=typeof v.mid==='string'?v.mid:'';
+  if(mid){if(killSeen(mid))return;markKill(mid)}       /* đã nhận EXP con này (tự hạ / nhận từ sự kiện khác) → bỏ */
+  grantExp(e,S.party.members[u].n||'đồng đội')}
 function onInvites(v){
   const now=NOW(),a=[];
   for(const from in v){const i=v[from];if(!i||typeof i.p!=='string')continue;
@@ -2101,12 +2316,14 @@ function tabParty(){
   h+=`<div class="a"><button class="${S.flw?'pri':''}" data-a="flw">${S.flw?'✅ Đang theo đội trưởng':'🧭 Theo đội trưởng'}</button></div><div class="mu">Bật: tự dịch chuyển tới bãi quái của đội trưởng và tự đánh quái ở đó — giữ nguyên cài tự đánh của bạn (tầm, bình, kỹ năng). Yêu cầu bạn đã mở khoá map đó.</div>`;
   const sp=spotPt();
   if(sp)h+=`<div class="mu">📍 Bãi của đội trưởng cách bạn <b style="color:var(--jd)">${M.round(M.hypot(G.x-sp[0],G.y-sp[1]))}</b> px${S.flw?'':' · bật “Theo đội trưởng” để vào chung'}</div>`}
-  if(lead)h+=`<div class="a"><button class="${S.host?'pri':''}" data-a="host">${S.host?'✅ Đang mở bãi cho cả đội':'📍 Mở bãi quái cho cả đội'}</button></div><div class="mu">Bật: bãi quái bạn đang đứng là điểm hẹn cho cả đội — thành viên bật “Theo đội trưởng” sẽ kéo tới đánh chung, máu quái dùng chung, và <b>mọi người đứng gần đều nhận EXP</b> của con quái bị hạ. Tắt: mỗi người đánh quái riêng.</div>`;
+  if(lead){const hf=hostFlag(),nm=Object.keys(S.party.members).length;
+    h+=`<div class="a"><button class="${hf?'pri':''}" data-a="host">${hf?'✅ Máy bạn đang là host quái/boss':'🖥️ Bật host quái/boss cho cả đội'}</button></div><div class="mu">Bật (mặc định khi đội ≥2 người): máy đội trưởng chạy quái &amp; boss, <b>thành viên cùng map thấy y hệt máy bạn</b> (vị trí, máu, chiêu thức) và đánh chung. Thành viên bật “Theo đội trưởng” sẽ kéo tới bãi quái của bạn và <b>mọi người đứng gần đều nhận EXP</b>. Tắt: mỗi người đánh quái riêng.</div>`;
+    if(hf&&nm>=2)h+='<div class="mu">🖥️ Đang đồng bộ quái &amp; boss cho '+(nm-1)+' thành viên cùng map</div>'}
   else{
   if(S.spot&&S.spot.m===G.map&&NOW()-(S.spot.ts||0)<15000)h+='<div class="mu">📍 Đội trưởng đang mở bãi quái — cả đội dồn tới đây</div>';
-  let fr=0;for(const k in S.pmobs||{})if(NOW()-(S.pmobs[k].ts||0)<4000){fr=1;break}
   const L=S.pst[S.party&&S.party.leader];
-  if(fr&&L&&L.m===G.map)h+='<div class="mu">⚔️ Đang đồng bộ quái theo đội — máu dùng chung</div>'}
+  if(S.gm)h+='<div class="mu">⚔️ Đang đồng bộ quái &amp; boss theo máy đội trưởng (host) — thấy y hệt, đánh chung</div>';
+  else if(L&&L.m===G.map)h+='<div class="mu">⏳ Đang chờ máy đội trưởng gửi dữ liệu quái…</div>'}
   h+='<div class="mu">💡 Chia EXP: ai hạ cũng được chia cho cả đội — bạn cùng map và đứng gần chỗ hạ là nhận, không cần bật tự đánh.</div>';
   return h+'<button class="dg" data-a="leave">Rời tổ đội</button>'}
 function tabNear(){
@@ -2153,7 +2370,7 @@ panel.addEventListener('click',e=>{
   else if(a==='inv')doInvite(u);else if(a==='acc')doAccept(u);else if(a==='dec')doDecline(u);
   else if(a==='leave')doLeave();else if(a==='kick')doKick(u);else if(a==='lead')doLead(u);else if(a==='goto')goMember(u);
   else if(a==='flw'){S.flw=S.flw?0:1;try{localStorage.setItem('mmo_flw',S.flw?'1':'0')}catch(e){}if(S.flw){G.auto=1;const b=document.getElementById('auto');if(b){b.classList.add('on');b.textContent='Tự đánh: bật'}say('Đã bật theo đội trưởng')}else say('Đã tắt theo đội trưởng');S.html='';renderPanel()}
-  else if(a==='host'){S.host=S.host?0:1;try{localStorage.setItem('mmo_host',S.host?'1':'0')}catch(e){}S.spotAt=0;if(!S.host){S.spotOn=0;try{S.party&&S.net.spotClear&&S.net.spotClear(S.party.id)}catch(e){}}say(S.host?'📍 Đã mở bãi quái · đồng đội kéo tới đây':'Đã tắt đồng bộ quái');S.html='';renderPanel()}
+  else if(a==='host'){const hf=hostFlag()?0:1;S.host=hf;try{localStorage.setItem('mmo_host2',hf?'1':'0')}catch(e){}S.spotAt=0;if(!hf){S.spotOn=0;try{S.party&&S.net.spotClear&&S.net.spotClear(S.party.id)}catch(e){}try{S.party&&S.net.hostClear&&S.net.hostClear(S.party.id)}catch(e){}}say(hf?'🖥️ Đã bật host quái · đồng đội thấy quái giống máy bạn':'Đã tắt host quái · mỗi người đánh quái riêng');S.html='';renderPanel()}
   else if(a==='mute'){S.mute.add(u);saveMute();S.html='';renderPanel();say('Đã chặn chat người chơi này')}
   else if(a==='unmute'){S.mute.delete(u);saveMute();S.html='';renderPanel()}});
 ['keydown','keyup','keypress'].forEach(ev=>Q('#mmtx').addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.key==='Enter'){e.preventDefault();sendChat()}}));
@@ -2221,16 +2438,23 @@ function onFx(pid,key,v){
 /* ================= HOOK VÀO GAME ================= */
 let depth=0;const _hit=hit;
 hit=function(q,s,mul,fl,nc,raw){
+  if(!q||!G||S.noRep)return _hit.apply(this,arguments);
+  const top=!depth;
   /* quái thường (không boss / không phụ) ai cũng hạ được → luôn cần đẩy EXP chia cả đội */
-  const share=!depth&&!S.noRep&&!!q&&!q.b&&!q.mn&&!!G&&!G.dead&&!!S.party;
-  const isBoss=!!(q&&q.b)&&useShared();
-  let isSMob=false;if(!isBoss&&q&&!q.b&&!q.mn&&S.party&&S.party.leader!==me()&&S.pmobs){const L=S.pst[S.party.leader];if(L&&L.m===G.map&&NOW()-(L.ts||0)<20000){const mid=mobMid(q);const m=S.pmobs[mid];isSMob=!!m&&NOW()-(m.ts||0)<4000}}
-  if(!share&&(depth>0||!q||S.noRep||(!isBoss&&!isSMob)))return _hit.apply(this,arguments);
-  const h0=q.hp,x0=G?G.xp:0;depth++;
+  const share=top&&!q.b&&!q.mn&&!G.dead&&!!S.party;
+  const isBoss=top&&!!q.b&&useShared();
+  /* bản sao do host điều khiển: sát thương mình gây ra được gom lại gửi về host (kể cả đòn lan sang quái khác) */
+  const gh=!!q.gh&&(top||q!==S.hitTop);
+  if(!share&&!isBoss&&!gh)return _hit.apply(this,arguments);
+  const h0=q.hp,b0=+q.bk||0,s0=+q.sh2||0,x0=G.xp,l0=G.lv,pt=S.hitTop;
+  if(top)S.hitTop=q;depth++;
   try{return _hit.apply(this,arguments)}
-  finally{depth--;const d=h0-(q.hp>0?q.hp:0);
-   if(d>0&&G){if(isBoss)addDmg(G.map,d);else if(isSMob){const mid=mobMid(q);S.mobDmg=S.mobDmg||{};S.mobDmg[mid]=(S.mobDmg[mid]||0)+d}}
-   if(share&&h0>0&&q.hp<=0)shareKill(q,G.xp-x0)}};
+  finally{depth--;if(top)S.hitTop=pt;
+   const d=h0-(q.hp>0?q.hp:0);
+   if(d>0&&isBoss)addDmg(G.map,d);
+   if(gh){ghostDmg(q,d,b0-(+q.bk||0),s0-(+q.sh2||0));if(h0>0&&q.hp<=0&&!q.rw){q.rw=1;q.dAt=Date.now();q.hd=0}}
+   if(share&&h0>0&&q.hp<=0){let g=G.xp-x0;for(let l=l0;l<G.lv;l++)g+=need(l);shareKill(q,g)}}};
+{const _cc=cc;cc=function(q,ty,v,p){const r=_cc.apply(this,arguments);if(q&&q.gh&&!S.noRep&&S.party)try{ghostCC(q,ty,v,p)}catch(e){}return r}}
 
 const MMO=window.MMO={
   attach(net){
@@ -2252,7 +2476,7 @@ const MMO=window.MMO={
     ui()},
   onMap(i){
     for(const k in S.pend)flushBoss(k);
-    S.map=i;S.pl.clear();S.sent=null;S.mhpAt=0;
+    S.map=i;S.pl.clear();S.sent=null;S.mhpAt=0;try{ghostOnMap()}catch(e){console.warn('[host] onMap',e)}
     if(S.net&&S.net.ready&&!S.kicked&&G){try{S.mhp=Math.max(1,st().mhp)}catch(e){}S.net.joinMap(i,payload())}
     setTimeout(bossSync,350);banner();if(S.open)renderPanel()},
   draw:drawAll,
@@ -2277,9 +2501,10 @@ const MMO=window.MMO={
     const p=spotPt();if(!p)return null;
     const fdx=p[0]-G.x,fdy=p[1]-G.y,fd=M.hypot(fdx,fdy);
     return fd>130?[fdx/fd,fdy/fd]:null},
-  allies,party:partyIds,send:sendFx,allyLow};
+  allies,party:partyIds,send:sendFx,allyLow,ghostTick};
 
 setInterval(tickNet,110);
+setInterval(hostPub,140);
 setInterval(bossSync,400);
 setInterval(bossTick,2000);
 setInterval(()=>{calcParty();partyFrames();banner();if(G&&S.pend[G.map])flushBoss(G.map);if(S.open&&S.tab!=='c')renderPanel()},500);
@@ -2700,7 +2925,7 @@ net.partyAccept=async(inv,info)=>{
 net.partyLeave=async(pid,isLeader,nextUid)=>{
   await remove(ref(db,'pstat/'+pid+'/'+net.uid)).catch(()=>{});
   await remove(ref(db,'pkill/'+pid)).catch(()=>{});
-  if(isLeader)await remove(ref(db,'pspot/'+pid)).catch(()=>{});
+  if(isLeader){await remove(ref(db,'pspot/'+pid)).catch(()=>{});await remove(ref(db,'phost/'+pid)).catch(()=>{})}
   if(isLeader&&!nextUid){await remove(ref(db,'chat/party/'+pid)).catch(()=>{});await remove(ref(db,'parties/'+pid))}
   else{
     if(isLeader)await set(ref(db,'parties/'+pid+'/leader'),nextUid);
@@ -2713,7 +2938,8 @@ net.mobWrite=(pid,o)=>{if(pid&&net.connected)set(ref(db,'pmobs/'+pid),o).catch((
 net.mobDmg=(pid,o)=>{if(pid&&net.connected)push(ref(db,'pdmg/'+pid),{...o,u:net.uid,ts:Math.round(net.now())}).catch(()=>{})};
 net.mobWatch=(pid,cb)=>{net.mobUnwatch();cur.unMob=onValue(ref(db,'pmobs/'+pid),s=>cb(s.val()||{}),()=>{})};
 net.mobUnwatch=()=>{try{cur.unMob&&cur.unMob()}catch(e){}cur.unMob=null};
-net.mobDmgWatch=(pid,cb)=>{net.mobDmgUnwatch();cur.unDmg=onValue(ref(db,'pdmg/'+pid),s=>{const v=s.val();if(v)for(const k in v){cb(k,v[k]);remove(ref(db,'pdmg/'+pid+'/'+k)).catch(()=>{})}},()=>{})};
+/* onChildAdded: mỗi gói sát thương được giao đúng 1 lần (onValue có thể gộp nhiều gói làm mất sát thương); CHỈ đội trưởng lắng nghe + xoá */
+net.mobDmgWatch=(pid,cb)=>{net.mobDmgUnwatch();cur.unDmg=onChildAdded(ref(db,'pdmg/'+pid),s=>{const v=s.val();remove(s.ref).catch(()=>{});if(v)cb(s.key,v)},()=>{})};
 net.mobDmgUnwatch=()=>{try{cur.unDmg&&cur.unDmg()}catch(e){}cur.unDmg=null};
 /* ---------- bãi quái cả đội (pspot: đội trưởng ghi) + sự kiện hạ quái (pkill: mọi thành viên ghi) ---------- */
 net.spotWrite=(pid,d)=>{if(pid&&net.connected)set(ref(db,'pspot/'+pid),d).catch(()=>{})};
@@ -2721,15 +2947,20 @@ net.spotClear=pid=>{if(pid)remove(ref(db,'pspot/'+pid)).catch(()=>{})};
 net.spotWatch=(pid,cb)=>{net.spotUnwatch();cur.unSpot=onValue(ref(db,'pspot/'+pid),s=>cb(s.val()||null),()=>{})};
 net.spotUnwatch=()=>{try{cur.unSpot&&cur.unSpot()}catch(e){}cur.unSpot=null};
 net.killPush=(pid,d)=>{if(pid&&net.connected)push(ref(db,'pkill/'+pid),{...d,u:net.uid,ts:Math.round(net.now())}).catch(()=>{})};
-net.killWatch=(pid,cb)=>{net.killUnwatch();cur.unKill=onValue(query(ref(db,'pkill/'+pid),orderByChild('ts'),limitToLast(12)),s=>{const v=s.val();if(v)for(const k in v){cb(k,v[k]);remove(ref(db,'pkill/'+pid+'/'+k)).catch(()=>{})}},()=>{})};
+net.killWatch=(pid,cb)=>{net.killUnwatch();cur.unKill=onChildAdded(query(ref(db,'pkill/'+pid),orderByChild('ts'),limitToLast(12)),s=>{const v=s.val();if(v)cb(s.key,v);remove(s.ref).catch(()=>{})},()=>{})};
 net.killUnwatch=()=>{try{cur.unKill&&cur.unKill()}catch(e){}cur.unKill=null};
+/* ---------- ảnh chụp quái/boss của host: phost/<đội> = {m: map, ts, s: JSON nén} (chỉ đội trưởng ghi, thành viên đọc) ---------- */
+net.hostWrite=(pid,o)=>{if(!pid||!net.connected)return;const r=ref(db,'phost/'+pid);if(cur.hostPid!==pid){cur.hostPid=pid;onDisconnect(r).remove().catch(()=>{})}set(r,o).catch(()=>{})};
+net.hostClear=pid=>{if(!pid)return;const r=ref(db,'phost/'+pid);try{onDisconnect(r).cancel().catch(()=>{})}catch(e){}cur.hostPid=null;remove(r).catch(()=>{})};
+net.hostWatch=(pid,cb)=>{net.hostUnwatch();cur.unHost=onValue(ref(db,'phost/'+pid),s=>cb(s.val()||null),()=>{})};
+net.hostUnwatch=()=>{try{cur.unHost&&cur.unHost()}catch(e){}cur.unHost=null};
 
 /* ---------- khởi động ---------- */
 function start(){
   onValue(ref(db,'.info/serverTimeOffset'),s=>{net.off=+s.val()||0});
   onValue(ref(db,'.info/connected'),s=>{
     const c=!!s.val();net.connected=c;
-    if(c){attachPresence();if(cur.pid)onDisconnect(ref(db,'pstat/'+cur.pid+'/'+net.uid)).remove().catch(()=>{})}
+    if(c){cur.hostPid=null;attachPresence();if(cur.pid)onDisconnect(ref(db,'pstat/'+cur.pid+'/'+net.uid)).remove().catch(()=>{})}
     emit('conn',c)});
   onValue(ref(db,'bosses'),s=>emit('bosses',s.val()||{}),e=>emit('bossErr',e&&e.code||'err'));
   onValue(ref(db,'invites/'+net.uid),s=>emit('invites',s.val()||{}),()=>{});
@@ -2791,6 +3022,7 @@ function startWS(u){
   net.partyCreate=info=>rpc({t:'party',op:'create'});
   net.partyWatch=pid=>{};net.partyUnwatch=()=>{};net.pstat=()=>{};net.mobWrite=()=>{};net.mobDmg=()=>{};net.mobWatch=net.mobUnwatch=net.mobDmgWatch=net.mobDmgUnwatch=()=>{};
 net.spotWrite=net.spotClear=()=>{};net.spotWatch=net.spotUnwatch=()=>{};net.killPush=()=>{};net.killWatch=net.killUnwatch=()=>{};
+net.hostWrite=net.hostClear=()=>{};net.hostWatch=net.hostUnwatch=()=>{};
   net.partyInvite=(target,pid,name)=>rpc({t:'party',op:'invite',to:target});
   net.inviteDrop=from=>{send({t:'party',op:'drop',from});return Promise.resolve()};
   net.partyAccept=(inv,info)=>rpc({t:'party',op:'accept',from:inv.from});
